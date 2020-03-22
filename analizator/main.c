@@ -95,12 +95,38 @@ Token *addTk(int code) {
     return tk;
 }
 
+char escape(char ch) {
+    switch (ch) {
+        case 'a': return '\a';
+        case 'b': return '\b';
+        case 'f': return '\f';
+        case 'n': return '\n';
+        case 'r': return '\r';
+        case 't': return '\t';
+        case 'v': return '\v';
+        case '\'': return '\'';
+        case '?': return '\?';
+        case '"': return '\"';
+        case '\\': return '\\';
+        case '0': return '\0';
+    }
+}
+
 char *createString(const char *pStartCh, const char *pCrtCh) {
     long length = pCrtCh - pStartCh;
     char *str = malloc(length);
+    if (str == NULL) {
+        err("Not enough memory");
+    }
     const char *i;
+    int index=0;
     for (i = pStartCh; i < pCrtCh; i++) {
-        str[i - pStartCh] = *i;
+        char ch=*i;
+        if(ch=='\\') {
+            i++;
+            ch=escape(*i);
+        }
+        str[index++] = ch;
     }
     str[length] = '\0';
     return str;
@@ -129,7 +155,7 @@ const char *pCrtCh;
 
 int getNextToken() {
     int state = 0, length;
-    char ch;
+    char ch,escaped;
     const char *pStartCh = NULL;
     Token *tk;
     while (1) {
@@ -238,6 +264,7 @@ int getNextToken() {
             case (2):
                 if (ch == '\n' || ch == '\r' || ch == '\0') {
                     pCrtCh++;
+                    line++;
                     state = 0;
                 } else {
                     pCrtCh++;
@@ -374,6 +401,8 @@ int getNextToken() {
                     pCrtCh++;
                     state = 34;
                 } else {
+                    pStartCh = pCrtCh;
+                    pCrtCh++;
                     state = 31;
                 }
                 break;
@@ -385,11 +414,14 @@ int getNextToken() {
                 break;
             case (32):
                 tk = addTk(CT_CHAR);
-                tk->i = ch;
+
+                tk->i = *pStartCh;
                 return CT_CHAR;
             case (34):
-                if (strchr("abfnrtv'?\"\0", ch)) {
+                if (strchr("abfnrtv'?\"\\0", ch)) {
                     state = 31;
+                    escaped=escape(ch);
+                    pStartCh=&escaped;
                     pCrtCh++;
                 } else {
                     tkerr(addTk(END), "caracter invalid");
@@ -437,6 +469,7 @@ int getNextToken() {
                     pCrtCh++;
                     state = 47;
                 } else if (ch == 'e' || ch == 'E') {
+                    pCrtCh++;
                     state = 49;
                 } else {
                     state = 41;
@@ -540,7 +573,6 @@ int getNextToken() {
                 tk->r = makeReal(pStartCh, pCrtCh);
 //                printf("%s %f\n", createString(pStartCh, pCrtCh), tk->r);
                 return CT_REAL;
-                break;
             case 53:
                 if (isalnum(ch) || ch == '_') {
                     pCrtCh++;
@@ -550,22 +582,27 @@ int getNextToken() {
                 break;
             case (54):
                 length = pCrtCh - pStartCh;
-                if (length == 5 && !memcmp(pStartCh, "BREAK", 5))tk = addTk(BREAK);
-                else if (length == 4 && !memcmp(pStartCh, "CHAR", 4))tk = addTk(CHAR);
-                else if (length == 6 && !memcmp(pStartCh, "DOUBLE", 6))tk = addTk(DOUBLE);
-                else if (length == 4 && !memcmp(pStartCh, "ELSE", 4))tk = addTk(ELSE);
-                else if (length == 3 && !memcmp(pStartCh, "FOR", 3))tk = addTk(FOR);
-                else if (length == 2 && !memcmp(pStartCh, "IF", 2))tk = addTk(IF);
-                else if (length == 3 && !memcmp(pStartCh, "INT", 3))tk = addTk(INT);
-                else if (length == 6 && !memcmp(pStartCh, "RETURN", 6))tk = addTk(RETURN);
-                else if (length == 6 && !memcmp(pStartCh, "STRUCT", 6))tk = addTk(STRUCT);
-                else if (length == 4 && !memcmp(pStartCh, "VOID", 4))tk = addTk(VOID);
-                else if (length == 5 && !memcmp(pStartCh, "WHILE", 5))tk = addTk(WHILE);
+                if (length == 5 && !memcmp(pStartCh, "break", 5))tk = addTk(BREAK);
+                else if (length == 4 && !memcmp(pStartCh, "char", 4))tk = addTk(CHAR);
+                else if (length == 6 && !memcmp(pStartCh, "double", 6))tk = addTk(DOUBLE);
+                else if (length == 4 && !memcmp(pStartCh, "else", 4))
+                    tk = addTk(ELSE);
+                else if (length == 3 && !memcmp(pStartCh, "for", 3))tk = addTk(FOR);
+                else if (length == 2 && !memcmp(pStartCh, "if", 2))tk = addTk(IF);
+                else if (length == 3 && !memcmp(pStartCh, "int", 3))tk = addTk(INT);
+                else if (length == 6 && !memcmp(pStartCh, "return", 6))tk = addTk(RETURN);
+                else if (length == 6 && !memcmp(pStartCh, "struct", 6))tk = addTk(STRUCT);
+                else if (length == 4 && !memcmp(pStartCh, "void", 4))tk = addTk(VOID);
+                else if (length == 5 && !memcmp(pStartCh, "while", 5))tk = addTk(WHILE);
                 else {
                     tk = addTk(ID);
                     tk->text = createString(pStartCh, pCrtCh);
                 }
                 return tk->code;
+                break;
+            default:
+                addTk(END);
+                return END;
         }
     }
 }
