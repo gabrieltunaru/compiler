@@ -121,6 +121,11 @@ int makeInt(const char *pStartCh, const char *pCrtCh) {
     return strtol(st, NULL, base);
 }
 
+double makeReal(const char *pStartCh, const char *pCrtCh) {
+    char *st = createString(pStartCh, pCrtCh);
+    return strtod(st,NULL);
+}
+
 char *code = NULL;
 const char *pCrtCh;
 
@@ -136,7 +141,7 @@ int getNextToken() {
                 if (isalpha(ch) || ch == '_') {
                     pStartCh = pCrtCh;
                     pCrtCh++;
-                    state = 48;
+                    state = 53;
                 } else if (ch == ' ' || ch == '\r' || ch == '\t') {
                     pCrtCh++;
                 } else if (ch == '\n') {
@@ -442,7 +447,6 @@ int getNextToken() {
             case 41:
                 tk = addTk(CT_INT);
                 tk->i = makeInt(pStartCh, pCrtCh);
-                printf("%d\n", tk->i);
                 return INT;
             case 42:
                 pCrtCh++;
@@ -470,24 +474,80 @@ int getNextToken() {
                 }
                 break;
             case 44:
-                if((ch>'0'&&ch<='9')||(ch>'a'&&ch<='f')||(ch>'A'&&ch<='F')) {
+                if ((ch > '0' && ch <= '9') || (ch > 'a' && ch <= 'f') || (ch > 'A' && ch <= 'F')) {
                     pCrtCh++;
-                    state=45;
+                    state = 45;
                 } else {
-                    tkerr(addTk(END),"caracter invalid");
+                    tkerr(addTk(END), "caracter invalid");
                 }
                 break;
             case 45:
-                if((ch>='0'&&ch<'9')||(ch>='a'&&ch<'f')||(ch>='A'&&ch<'F')) {
+                if ((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F')) {
                     pCrtCh++;
                 } else {
-                    state=41;
+                    state = 41;
                 }
                 break;
             case 46:
-                if()
+                if (ch >= '0' && ch <= '9') {
+                    pCrtCh++;
+                } else if (ch == '.') {
+                    pCrtCh;
+                    state = 47;
+                } else {
+                    tkerr(addTk(END), "caracter invalid");
+                }
                 break;
-            case (48):
+            case 47:
+                if (ch >= '0' && ch <= '9') {
+                    pCrtCh++;
+                    state = 48;
+                } else {
+                    tkerr(addTk(END), "caracter invalid");
+                }
+                break;
+            case 48:
+                if (ch >= '0' && ch <= '9') {
+                    pCrtCh++;
+                } else if (ch == 'e' || ch == 'E') {
+                    pCrtCh++;
+                    state = 49;
+                } else {
+                    state = 52;
+                }
+                break;
+            case 49:
+                if (ch == '+' || ch == '-') {
+                    pCrtCh++;
+                }
+                state = 50;
+                break;
+            case 50:
+                if (ch >= '0' && ch <= '9') {
+                    pCrtCh++;
+                    state=51;
+                } else {
+                    tkerr(addTk(END), "caracter invalid");
+                }
+                break;
+            case 51:
+                if (ch >= '0' && ch <= '9') {
+                    pCrtCh++;
+                } else {
+                    state=52;
+                }
+                break;
+            case 52:
+                tk = addTk(CT_REAL);
+                tk->r = makeReal(pStartCh, pCrtCh);
+                printf("%s %f\n",createString(pStartCh,pCrtCh), tk->r);
+                return CT_REAL;
+                break;
+            case 53:
+                pCrtCh++;
+                state=0;
+                break;
+            case (55):
                 //todo: id
                 pCrtCh++;
                 state = 0;
@@ -521,7 +581,7 @@ void start() {
 int main(int argc, char **argv) {
 //    printf("%s",argv[1]);
     read_file(argv[1]);
-    printf("%s", code);
+//    printf("%s", code);
     start();
     free(code);
     return 0;

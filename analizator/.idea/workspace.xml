@@ -63,7 +63,7 @@
       <option name="presentableId" value="Default" />
       <updated>1584392591048</updated>
       <workItem from="1584392592957" duration="1641000" />
-      <workItem from="1584798605995" duration="19320000" />
+      <workItem from="1584798605995" duration="20951000" />
     </task>
     <servers />
   </component>
@@ -75,14 +75,15 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/main.c</url>
-          <line>525</line>
-          <option name="timeStamp" value="10" />
+          <line>577</line>
+          <option name="timeStamp" value="13" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
     <watches-manager>
       <configuration name="CMakeRunConfiguration">
         <watch expression="tokens" language="ObjectiveC" />
+        <watch expression="pCrtCh" language="ObjectiveC" />
       </configuration>
     </watches-manager>
   </component>
