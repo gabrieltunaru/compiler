@@ -20,9 +20,7 @@ enum {
     VOID,
     WHILE,
     CT_INT,
-    EXP,
     CT_REAL,
-    ESC,
     CT_CHAR,
     CT_STRING,
     COMMA,
@@ -123,14 +121,14 @@ int makeInt(const char *pStartCh, const char *pCrtCh) {
 
 double makeReal(const char *pStartCh, const char *pCrtCh) {
     char *st = createString(pStartCh, pCrtCh);
-    return strtod(st,NULL);
+    return strtod(st, NULL);
 }
 
 char *code = NULL;
 const char *pCrtCh;
 
 int getNextToken() {
-    int state = 0, nCh;
+    int state = 0, length;
     char ch;
     const char *pStartCh = NULL;
     Token *tk;
@@ -525,7 +523,7 @@ int getNextToken() {
             case 50:
                 if (ch >= '0' && ch <= '9') {
                     pCrtCh++;
-                    state=51;
+                    state = 51;
                 } else {
                     tkerr(addTk(END), "caracter invalid");
                 }
@@ -534,27 +532,169 @@ int getNextToken() {
                 if (ch >= '0' && ch <= '9') {
                     pCrtCh++;
                 } else {
-                    state=52;
+                    state = 52;
                 }
                 break;
             case 52:
                 tk = addTk(CT_REAL);
                 tk->r = makeReal(pStartCh, pCrtCh);
-                printf("%s %f\n",createString(pStartCh,pCrtCh), tk->r);
+//                printf("%s %f\n", createString(pStartCh, pCrtCh), tk->r);
                 return CT_REAL;
                 break;
             case 53:
-                pCrtCh++;
-                state=0;
+                if (isalnum(ch) || ch == '_') {
+                    pCrtCh++;
+                } else {
+                    state = 54;
+                }
                 break;
-            case (55):
-                //todo: id
-                pCrtCh++;
-                state = 0;
-                break;
+            case (54):
+                length = pCrtCh - pStartCh;
+                if (length == 5 && !memcmp(pStartCh, "BREAK", 5))tk = addTk(BREAK);
+                else if (length == 4 && !memcmp(pStartCh, "CHAR", 4))tk = addTk(CHAR);
+                else if (length == 6 && !memcmp(pStartCh, "DOUBLE", 6))tk = addTk(DOUBLE);
+                else if (length == 4 && !memcmp(pStartCh, "ELSE", 4))tk = addTk(ELSE);
+                else if (length == 3 && !memcmp(pStartCh, "FOR", 3))tk = addTk(FOR);
+                else if (length == 2 && !memcmp(pStartCh, "IF", 2))tk = addTk(IF);
+                else if (length == 3 && !memcmp(pStartCh, "INT", 3))tk = addTk(INT);
+                else if (length == 6 && !memcmp(pStartCh, "RETURN", 6))tk = addTk(RETURN);
+                else if (length == 6 && !memcmp(pStartCh, "STRUCT", 6))tk = addTk(STRUCT);
+                else if (length == 4 && !memcmp(pStartCh, "VOID", 4))tk = addTk(VOID);
+                else if (length == 5 && !memcmp(pStartCh, "WHILE", 5))tk = addTk(WHILE);
+                else {
+                    tk = addTk(ID);
+                    tk->text = createString(pStartCh, pCrtCh);
+                }
+                return tk->code;
         }
     }
+}
 
+void showAtoms() {
+    Token *token = tokens;
+    while (token) {
+        switch (token->code) {
+            case ID:
+                printf("%s: %s ", "ID", token->text);
+                break;
+            case BREAK:
+                printf("%s", "BREAK");
+                break;
+            case CHAR:
+                printf("%s", "CHAR");
+                break;
+            case DOUBLE:
+                printf("%s", "DOUBLE");
+                break;
+            case ELSE:
+                printf("%s", "ELSE");
+                break;
+            case FOR:
+                printf("%s", "FOR");
+                break;
+            case IF:
+                printf("%s", "IF");
+                break;
+            case INT:
+                printf("%s", "INT");
+                break;
+            case RETURN:
+                printf("%s", "RETURN");
+                break;
+            case STRUCT:
+                printf("%s", "STRUCT");
+                break;
+            case VOID:
+                printf("%s", "VOID");
+                break;
+            case WHILE:
+                printf("%s", "WHILE");
+                break;
+            case CT_INT:
+                printf("%s: %d", "CT_INT", token->i);
+                break;
+            case CT_REAL:
+                printf("%s: %f", "CT_REAL", token->r);
+                break;
+            case CT_CHAR:
+                printf("%s: %c", "CT_CHAR", token->i);
+                break;
+            case CT_STRING:
+                printf("%s: %s", "CT_STRING", token->text);
+                break;
+            case COMMA:
+                printf("%s", "COMMA");
+                break;
+            case SEMICOLON:
+                printf("%s", "SEMICOLON");
+                break;
+            case LPAR:
+                printf("%s", "LPAR");
+                break;
+            case RPAR:
+                printf("%s", "RPAR");
+                break;
+            case LBRACKET:
+                printf("%s", "LBRACKET");
+                break;
+            case RBRACKET:
+                printf("%s", "RBRACKET");
+                break;
+            case LACC:
+                printf("%s", "LACC");
+                break;
+            case RACC:
+                printf("%s", "RACC");
+                break;
+            case ADD:
+                printf("%s", "ADD");
+                break;
+            case SUB:
+                printf("%s", "SUB");
+                break;
+            case MUL:
+                printf("%s", "MUL");
+                break;
+            case DIV:
+                printf("%s", "DIV");
+                break;
+            case DOT:
+                printf("%s", "DOT");
+                break;
+            case AND:
+                printf("%s", "AND");
+                break;
+            case OR:
+                printf("%s", "OR");
+                break;
+            case NOT:
+                printf("%s", "NOT");
+                break;
+            case ASSIGN:
+                printf("%s", "ASSIGN");
+                break;
+            case EQUAL:
+                printf("%s", "EQUAL");
+                break;
+            case NOTEQ:
+                printf("%s", "NOTEQ");
+                break;
+            case LESS:
+                printf("%s", "LESS");
+                break;
+            case LESSEQ:
+                printf("%s", "LESSEQ");
+                break;
+            case GREATER:
+                printf("%s", "GREATER");
+                break;
+            case GREATEREQ:
+                printf("%s", "GREATEREQ");
+                break;
+        }
+        printf(" ");
+        token = token->next;
+    }
 }
 
 void read_file(char *file_name) {
@@ -576,12 +716,12 @@ void read_file(char *file_name) {
 void start() {
     pCrtCh = &code[0];
     while (getNextToken() != END);
+    showAtoms();
 }
 
+
 int main(int argc, char **argv) {
-//    printf("%s",argv[1]);
     read_file(argv[1]);
-//    printf("%s", code);
     start();
     free(code);
     return 0;
