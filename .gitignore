@@ -156,3 +156,6 @@ fabric.properties
 .history
 
 # End of https://www.gitignore.io/api/c,clion,visualstudiocode
+*.zip
+.idea
+analizator/.idea
