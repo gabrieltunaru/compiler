@@ -3,4 +3,4 @@ project(analizator C)
 
 set(CMAKE_C_STANDARD 99)
 
-add_executable(analizator analizator.c)
+add_executable(analizator sintactic.c analizator.c)

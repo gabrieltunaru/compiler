@@ -1,63 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdarg.h>
+#include "analizator.h"
 
 #define SAFEALLOC(var, Type) if((var=(Type*)malloc(sizeof(Type)))==NULL)err("not enough memory");
-int line = 0;
-enum {
-    ID,
-    BREAK,
-    CHAR,
-    DOUBLE,
-    ELSE,
-    FOR,
-    IF,
-    INT,
-    RETURN,
-    STRUCT,
-    VOID,
-    WHILE,
-    CT_INT,
-    CT_REAL,
-    CT_CHAR,
-    CT_STRING,
-    COMMA,
-    SEMICOLON,
-    LPAR,
-    RPAR,
-    LBRACKET,
-    RBRACKET,
-    LACC,
-    RACC,
-    ADD,
-    SUB,
-    MUL,
-    DIV,
-    DOT,
-    AND,
-    OR,
-    NOT,
-    ASSIGN,
-    EQUAL,
-    NOTEQ,
-    LESS,
-    LESSEQ,
-    GREATER,
-    GREATEREQ,
-    END
-}; // codurile AL
-typedef struct _Token {
-    int code; // codul (numele)
-    union {
-        char *text; // folosit pentru ID, CT_STRING (alocat dinamic)
-        long int i; // folosit pentru CT_INT, CT_CHAR
-        double r; // folosit pentru CT_REAL
-    };
-    int line; // linia din fisierul de intrare
-    struct _Token *next; // inlantuire la urmatorul AL
-} Token;
+
+int line = 1;
 Token *tokens = NULL, *lastToken = NULL;
 
 void err(const char *fmt, ...) {
@@ -95,21 +45,35 @@ Token *addTk(int code) {
     return tk;
 }
 
+
 char escape(char ch) {
     switch (ch) {
-        case 'a': return '\a';
-        case 'b': return '\b';
-        case 'f': return '\f';
-        case 'n': return '\n';
-        case 'r': return '\r';
-        case 't': return '\t';
-        case 'v': return '\v';
-        case '\'': return '\'';
-        case '?': return '\?';
-        case '"': return '\"';
-        case '\\': return '\\';
-        case '0': return '\0';
+        case 'a':
+            return '\a';
+        case 'b':
+            return '\b';
+        case 'f':
+            return '\f';
+        case 'n':
+            return '\n';
+        case 'r':
+            return '\r';
+        case 't':
+            return '\t';
+        case 'v':
+            return '\v';
+        case '\'':
+            return '\'';
+        case '?':
+            return '\?';
+        case '"':
+            return '\"';
+        case '\\':
+            return '\\';
+        case '0':
+            return '\0';
     }
+    return '0';
 }
 
 char *createString(const char *pStartCh, const char *pCrtCh) {
@@ -119,12 +83,12 @@ char *createString(const char *pStartCh, const char *pCrtCh) {
         err("Not enough memory");
     }
     const char *i;
-    int index=0;
+    int index = 0;
     for (i = pStartCh; i < pCrtCh; i++) {
-        char ch=*i;
-        if(ch=='\\') {
+        char ch = *i;
+        if (ch == '\\') {
             i++;
-            ch=escape(*i);
+            ch = escape(*i);
         }
         str[index++] = ch;
     }
@@ -155,7 +119,7 @@ const char *pCrtCh;
 
 int getNextToken() {
     int state = 0, length;
-    char ch,escaped;
+    char ch, escaped;
     const char *pStartCh = NULL;
     Token *tk;
     while (1) {
@@ -275,6 +239,9 @@ int getNextToken() {
                     pCrtCh++;
                     state = 4;
                 } else {
+                    if (ch == '\n') {
+                        line++;
+                    }
                     pCrtCh++;
                 }
                 break;
@@ -420,8 +387,8 @@ int getNextToken() {
             case (34):
                 if (strchr("abfnrtv'?\"\\0", ch)) {
                     state = 31;
-                    escaped=escape(ch);
-                    pStartCh=&escaped;
+                    escaped = escape(ch);
+                    pStartCh = &escaped;
                     pCrtCh++;
                 } else {
                     tkerr(addTk(END), "caracter invalid");
@@ -444,7 +411,6 @@ int getNextToken() {
                     pCrtCh++;
                     state = 38;
                 } else if (ch == '"') {
-                    pCrtCh++;
                     state = 37;
                 } else {
                     pCrtCh++;
@@ -453,6 +419,7 @@ int getNextToken() {
             case (37):
                 tk = addTk(CT_STRING);
                 tk->text = createString(pStartCh, pCrtCh);
+                pCrtCh++;
                 return CT_STRING;
             case 38:
                 if (strchr("abfnrtv'?\"\0", ch)) {
@@ -610,6 +577,7 @@ int getNextToken() {
 void showAtoms() {
     Token *token = tokens;
     while (token) {
+        printf("%d ", token->line);
         switch (token->code) {
             case ID:
                 printf("%s: %s ", "ID", token->text);
@@ -648,16 +616,16 @@ void showAtoms() {
                 printf("%s", "WHILE");
                 break;
             case CT_INT:
-                printf("%s: %d", "CT_INT", token->i);
+                printf("%s:%d", "CT_INT", token->i);
                 break;
             case CT_REAL:
-                printf("%s: %f", "CT_REAL", token->r);
+                printf("%s:%f", "CT_REAL", token->r);
                 break;
             case CT_CHAR:
-                printf("%s: %c", "CT_CHAR", token->i);
+                printf("%s:%c", "CT_CHAR", token->i);
                 break;
             case CT_STRING:
-                printf("%s: %s", "CT_STRING", token->text);
+                printf("%s:%s", "CT_STRING", token->text);
                 break;
             case COMMA:
                 printf("%s", "COMMA");
@@ -728,8 +696,11 @@ void showAtoms() {
             case GREATEREQ:
                 printf("%s", "GREATEREQ");
                 break;
+            case END:
+                printf("%s", "END");
+                break;
         }
-        printf(" ");
+        printf("\n");
         token = token->next;
     }
 }
@@ -756,10 +727,9 @@ void start() {
     showAtoms();
 }
 
-
-int main(int argc, char **argv) {
-    read_file(argv[1]);
+Token *lexical(char *file) {
+    read_file(file);
     start();
     free(code);
-    return 0;
+    return tokens;
 }
