@@ -29,122 +29,10 @@ int exprPostfix1();
 
 int exprPrimary();
 
-int exprUnary();
-
-int exprCast();
-
-int exprMul();
-int exprAdd();
-
-/*
- * exprPostfix: exprPostfix LBRACKET expr RBRACKET
-           | exprPostfix DOT ID
-           | exprPrimary ;
- * exprPostFix: exprPrimary exprPostFix1
- * exprPostFix1: LBRACKET expr RBRACKET exprPostfix
-            | DOT ID exprPostFix
-            | epsilon
- */
-
-int expr() {
-    return 1;
-}
-
 int typename() {
     return 1;
 }
 
-int exprRel1() {
-    if(consume(LESS)||consume(LESSEQ)||consume(GREATER)||consume(GREATEREQ)) {
-        if (!exprAdd()) {crtTkErr("invalid expr");}
-        exprRel1();
-    }
-    return 1;
-}
-
-int exprRel() {
-    if (!exprAdd()) { return 0; }
-    exprRel1();
-    return 1;
-}
-
-
-/*
- * exprAdd: exprAdd ( ADD | SUB ) exprMul | exprMul ;
- * exprAdd: exprMul exprAdd1
- * exprAdd1: ( ADD | SUB ) exprMul expreAdd1 | epsilon
- */
-
-int exprAdd1() {
-    if (consume(ADD) || consume(SUB)) {
-        if (!exprCast()) { crtTkErr("invalid expr"); }
-        exprAdd1();
-    }
-    return 1;
-}
-
-int exprAdd() {
-    if (!exprMul()) { return 0; }
-    if (exprAdd1()) { return 1; }
-}
-
-/*
- * exprMul: exprMul ( MUL | DIV ) exprCast | exprCast ;
- * exprMul: expreCast exprMul1
- * exprMul1: ( MUL | DIV ) expreCast exprMul1 | epsilon
- */
-
-int exprMul1() {
-    if (consume(MUL) || consume(DIV)) {
-        if (!exprCast()) { crtTkErr("invalid expr"); }
-        exprMul1();
-    }
-    return 1;
-}
-
-int exprMul() {
-    if (!exprCast()) { return 0; }
-    if (exprMul1()) { return 1; }
-}
-
-
-int exprCast() {
-    if (!consume(LPAR)) {
-        if (exprUnary()) {
-            return 1;
-        } else {
-            return 0;
-        }
-    }
-    if (!typename()) { crtTkErr("invalid type name after ("); }
-    if (!consume(RPAR)) { crtTkErr("missing )"); }
-    if (!exprCast()) { crtTkErr("invalid expression"); }
-    return 1;
-}
-
-int exprUnary() {
-    if (consume(SUB) || consume(NOT)) {
-        if (!exprUnary()) { crtTkErr("invalid expr"); }
-    } else if (!exprPostfix()) { return 0; }
-    return 1;
-}
-
-int exprPostfix() {
-    if (exprPrimary() || exprPostfix1()) { return 1; }
-    return 0;
-}
-
-int exprPostfix1() {
-    if (consume(LBRACKET)) {
-        if (!expr()) { crtTkErr("invalid expression"); }
-        if (!consume(RBRACKET)) { crtTkErr("missing }"); }
-        if (!exprPostfix()) { crtTkErr("invalid expression"); }
-    } else if (consume(DOT)) {
-        if (!consume(ID)) { crtTkErr("missing id after ."); }
-        if (!exprPostfix()) { crtTkErr("invalid expression"); }
-    }
-    return 1;
-}
 
 int exprPrimary() {
     if (consume(ID)) {
@@ -181,6 +69,164 @@ int exprPrimary() {
 
 }
 
+
+/*
+ * exprPostfix: exprPostfix LBRACKET expr RBRACKET
+           | exprPostfix DOT ID
+           | exprPrimary ;
+ * exprPostFix: exprPrimary exprPostFix1
+ * exprPostFix1: LBRACKET expr RBRACKET exprPostfix
+            | DOT ID exprPostFix
+            | epsilon
+ */
+
+int exprPostfix() {
+    if (exprPrimary() || exprPostfix1()) { return 1; }
+    return 0;
+}
+
+int exprPostfix1() {
+    if (consume(LBRACKET)) {
+        if (!expr()) { crtTkErr("invalid expression"); }
+        if (!consume(RBRACKET)) { crtTkErr("missing }"); }
+        if (!exprPostfix()) { crtTkErr("invalid expression"); }
+    } else if (consume(DOT)) {
+        if (!consume(ID)) { crtTkErr("missing id after ."); }
+        if (!exprPostfix()) { crtTkErr("invalid expression"); }
+    }
+    return 1;
+}
+
+int exprUnary() {
+    if (consume(SUB) || consume(NOT)) {
+        if (!exprUnary()) { crtTkErr("invalid expr"); }
+    } else if (!exprPostfix()) { return 0; }
+    return 1;
+}
+
+int exprCast() {
+    if (!consume(LPAR)) {
+        if (exprUnary()) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+    if (!typename()) { crtTkErr("invalid type name after ("); }
+    if (!consume(RPAR)) { crtTkErr("missing )"); }
+    if (!exprCast()) { crtTkErr("invalid expression"); }
+    return 1;
+}
+
+
+/*
+ * exprMul: exprMul ( MUL | DIV ) exprCast | exprCast ;
+ * exprMul: expreCast exprMul1
+ * exprMul1: ( MUL | DIV ) expreCast exprMul1 | epsilon
+ */
+
+int exprMul1() {
+    if (consume(MUL) || consume(DIV)) {
+        if (!exprCast()) { crtTkErr("invalid expr"); }
+        exprMul1();
+    }
+    return 1;
+}
+
+int exprMul() {
+    if (!exprCast()) { return 0; }
+    exprMul1();
+    return 1;
+}
+
+/*
+ * exprAdd: exprAdd ( ADD | SUB ) exprMul | exprMul ;
+ * exprAdd: exprMul exprAdd1
+ * exprAdd1: ( ADD | SUB ) exprMul expreAdd1 | epsilon
+ */
+
+int exprAdd1() {
+    if (consume(ADD) || consume(SUB)) {
+        if (!exprCast()) { crtTkErr("invalid expr"); }
+        exprAdd1();
+    }
+    return 1;
+}
+
+int exprAdd() {
+    if (!exprMul()) { return 0; }
+    if (exprAdd1()) { return 1; }
+}
+
+int exprRel1() {
+    if (consume(LESS) || consume(LESSEQ) || consume(GREATER) || consume(GREATEREQ)) {
+        if (!exprAdd()) { crtTkErr("invalid expr"); }
+        exprRel1();
+    }
+    return 1;
+}
+
+int exprRel() {
+    if (!exprAdd()) { return 0; }
+    exprRel1();
+    return 1;
+}
+
+int exprEq1() {
+    if (consume(EQUAL) || consume(NOTEQ)) {
+        if (!exprRel()) { crtTkErr("invalid expr"); }
+        exprEq1();
+    }
+    return 1;
+}
+
+int exprEq() {
+    if (!exprAdd()) { return 0; }
+    exprEq1();
+    return 1;
+};
+
+int exprAnd1() {
+    if (consume(AND)) {
+        if (!exprEq()) { crtTkErr("invalid expr"); }
+        exprAnd1();
+    }
+    return 1;
+}
+
+int exprAnd() {
+    if (!exprEq()) { return 0; }
+    return exprEq1();
+}
+
+int exprOr1() {
+    if (consume(OR)) {
+        if (!exprAnd()) { crtTkErr("invalid expr"); }
+        exprOr1();
+    }
+    return 1;
+}
+
+int exprOr() {
+    if (!exprAnd()) { return 0; }
+    return exprOr1();
+}
+
+int exprAssign() {
+    if (!exprUnary()) {
+        if (exprOr()) { return 1; }
+        else {
+            return 0;
+        }
+    }
+    if (!consume(ASSIGN)) { crtTkErr("missing = after expression "); }
+    if(!exprAssign()) {crtTkErr("missing expr after =");}
+    return 1;
+}
+
+int expr() {
+    return exprAssign();
+}
 
 int typeBase() {
     if (consume(INT) || consume(DOUBLE) || consume(CHAR) || consume(STRUCT)) {
