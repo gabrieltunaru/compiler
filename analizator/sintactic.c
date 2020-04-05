@@ -29,6 +29,14 @@ int exprPostfix1();
 
 int exprPrimary();
 
+int declVar();
+
+int stm();
+
+int typeBase();
+
+int arrayDecl();
+
 int typename() {
     return 1;
 }
@@ -213,14 +221,16 @@ int exprOr() {
 }
 
 int exprAssign() {
+    startTk = crtTk;
     if (!exprUnary()) {
         if (exprOr()) { return 1; }
         else {
+            crtTk = startTk;
             return 0;
         }
     }
     if (!consume(ASSIGN)) { crtTkErr("missing = after expression "); }
-    if(!exprAssign()) {crtTkErr("missing expr after =");}
+    if (!exprAssign()) { crtTkErr("missing expr after ="); }
     return 1;
 }
 
@@ -228,17 +238,122 @@ int expr() {
     return exprAssign();
 }
 
-int typeBase() {
-    if (consume(INT) || consume(DOUBLE) || consume(CHAR) || consume(STRUCT)) {
-        if (!consume(ID)) { tkerr(crtTk, "invalid type declaration"); }
+int stmCompound() {
+    startTk = crtTk;
+    if (!consume(LACC)) { return 0; }
+    while (1) {
+        if (!declVar() && !stm()) { break; }
     }
+    if (!consume(RACC)) { crtTkErr("missing )"); }
     return 1;
+}
+
+int stm() {
+    if (consume(IF)) {
+        if (!consume(LPAR)) { crtTkErr("missing ( after if declaration"); }
+        if (!expr()) { crtTkErr("invalid boolean condition after ("); }
+        if (!consume(RPAR)) { crtTkErr("missing ) in if declaration"); }
+        if (!stm()) { crtTkErr("invalid if body"); }
+        if (consume(ELSE)) {
+            if (!stm()) { crtTkErr("invalid else body"); }
+        }
+        return 1;
+    }
+    if (consume(WHILE)) {
+        if (!consume(LPAR)) { crtTkErr("missing ( after while declaration"); }
+        if (!expr()) { crtTkErr("invalid boolean condition after ("); }
+        if (!consume(RPAR)) { crtTkErr("missing ) in while declaration"); }
+        if (!stm()) { crtTkErr("invalid while body"); }
+        return 1;
+    }
+    if (consume(FOR)) {
+        if (!consume(LPAR)) { crtTkErr("missing ( after for declaration"); }
+        expr();
+        if (!consume(SEMICOLON)) { crtTkErr("missing ; in for declaration"); }
+        expr();
+        if (!consume(SEMICOLON)) { crtTkErr("missing ; in for declaration"); }
+        expr();
+        if (!consume(RPAR)) { crtTkErr("missing ) in for declaration"); }
+        if (!stm()) { crtTkErr("invalid for body"); }
+        return 1;
+    }
+    if (consume(BREAK)) {
+        if (!consume(SEMICOLON)) { crtTkErr("missing ; after BREAK"); }
+        return 1;
+    }
+    if (consume(RETURN)) {
+        expr();
+        if (!consume(SEMICOLON)) { crtTkErr("missing ; after RETURN"); }
+        return 1;
+    }
+    expr();
+    if (consume(SEMICOLON)) {
+        return 1;
+    }
+    return 0;
+}
+
+int funcArg() {
+    if (typeBase()) {
+        if (!consume(ID)) { crtTkErr("missing id after type declaration"); }
+        arrayDecl();
+        return 1;
+    }
+    return 0;
+}
+
+int declFunc() {
+    startTk = crtTk;
+    if (!consume(VOID)) {
+        if (!typeBase()) { return 0; }
+        else {
+            consume(MUL);
+        }
+    }
+    if (!consume(ID)) { crtTkErr("invalid function name"); }
+    if (!consume(LPAR)) {
+        crtTk = startTk;
+        return 0;
+    }
+    funcArg();
+    while (1) {
+        if (!consume(COMMA)) { break; }
+        if (!funcArg()) { crtTkErr("missing argument after ,"); }
+    }
+    if(!consume(RPAR)) {crtTkErr("missing ) in function signature");}
+    if(!stmCompound()) crtTkErr("invalid function body");
+    return 1;
+}
+
+int typeName() {
+    if(!typeBase()) return 0;
+    arrayDecl();
+}
+
+int arrayDecl() {
+    if(!consume(LBRACKET)) return 0;
+    expr();
+    if(!consume(RBRACKET)) crtTkErr("missing ] in type declaration");
+    return 1;
+}
+
+int typeBase() {
+    if (consume(INT) || consume(DOUBLE) || consume(CHAR)) {
+        return 1;
+    }
+    if (consume(STRUCT)) {
+        if (consume(ID)) {
+            return 1;
+        } else {
+            crtTkErr("missing id after struct");
+        }
+    }
+    return 0;
 }
 
 int declVar() {
     if (!typeBase()) { return 0; }
-    if (!consume(ID)) { tkerr(crtTk, "invalid type declaration"); }
-
+    if (!consume(ID)) { tkerr(crtTk, "missing variable name after type declaration"); }
     return 1;
 }
 
@@ -254,9 +369,18 @@ int declStruct() {
     return 1;
 }
 
+int unit() {
+    while(1) {
+        if(!declVar()&&!declStruct()&&!declFunc()) break;
+        if(!consume(END)) crtTkErr("end not found");
+        return 1;
+    }
+}
+
 void sintactic() {
     tokens = lexical("/home/tunarug/custom/gitprojects/facultate/lftc/analizator/test.c");
     crtTk = tokens;
+    unit();
 }
 
 int main(int argc, char **argv) {

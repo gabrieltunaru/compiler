@@ -13,6 +13,7 @@
   <component name="ChangeListManager">
     <list default="true" id="fb00acf4-b778-485d-8807-f46fb250548e" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/analizator.c" beforeDir="false" afterPath="$PROJECT_DIR$/analizator.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/sintactic.c" beforeDir="false" afterPath="$PROJECT_DIR$/sintactic.c" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -78,7 +79,9 @@
       <workItem from="1584392592957" duration="1641000" />
       <workItem from="1584798605995" duration="29346000" />
       <workItem from="1585424120598" duration="2460000" />
-      <workItem from="1585426595869" duration="13862000" />
+      <workItem from="1585426595869" duration="15512000" />
+      <workItem from="1586019705913" duration="2667000" />
+      <workItem from="1586073857946" duration="2906000" />
     </task>
     <servers />
   </component>
@@ -97,5 +100,22 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/sintactic.c</url>
+          <line>230</line>
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+    <watches-manager>
+      <configuration name="CMakeRunConfiguration">
+        <watch expression="crtTk" language="ObjectiveC" />
+        <watch expression="startTk" language="ObjectiveC" />
+      </configuration>
+    </watches-manager>
   </component>
 </project>
