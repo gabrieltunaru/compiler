@@ -449,16 +449,19 @@ int getNextToken() {
                 tk->i = makeInt(pStartCh, pCrtCh);
                 return INT;
             case 42:
-                pCrtCh++;
                 if (ch == 'x') {
+                    pCrtCh++;
                     state = 44;
                 } else if (ch >= '0' && ch <= '7') {
+                    pCrtCh++;
                     state = 43;
                 } else if (ch == '8' || ch == 9) {
+                    pCrtCh++;
                     state = 46;
                 } else if (ch == '.') {
+                    pCrtCh++;
                     state = 47;
-                } else tkerr(addTk(END), "caracter invalid");
+                } else state=41;
                 break;
             case 43:
                 if (ch >= '0' && ch <= '7') {
@@ -556,8 +559,10 @@ int getNextToken() {
                 else if (length == 6 && !memcmp(pStartCh, "double", 6))tk = addTk(DOUBLE);
                 else if (length == 4 && !memcmp(pStartCh, "else", 4))
                     tk = addTk(ELSE);
-                else if (length == 3 && !memcmp(pStartCh, "for", 3))tk = addTk(FOR);
-                else if (length == 2 && !memcmp(pStartCh, "if", 2))tk = addTk(IF);
+                else if (length == 3 && !memcmp(pStartCh, "for", 3))
+                    tk = addTk(FOR);
+                else if (length == 2 && !memcmp(pStartCh, "if", 2))
+                    tk = addTk(IF);
                 else if (length == 3 && !memcmp(pStartCh, "int", 3))tk = addTk(INT);
                 else if (length == 6 && !memcmp(pStartCh, "return", 6))tk = addTk(RETURN);
                 else if (length == 6 && !memcmp(pStartCh, "struct", 6))tk = addTk(STRUCT);
@@ -728,7 +733,7 @@ void read_file(char *file_name) {
 void start() {
     pCrtCh = &code[0];
     while (getNextToken() != END);
-//    showAtoms();
+    showAtoms();
 }
 
 Token *lexical(char *file) {

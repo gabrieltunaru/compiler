@@ -64,9 +64,9 @@ int exprPrimary() {
                     };
                 }
             }
-        }
-        if (!consume(RPAR)) {
-            crtTkErr("missing )");
+            if (!consume(RPAR)) {
+                crtTkErr("missing ) in expression");
+            }
         }
         return 1;
     } else if (consume(CT_INT)) { return 1; }
@@ -209,7 +209,7 @@ int exprEq1() {
 
 int exprEq() {
     debug("exprEq");
-    if (!exprAdd()) { return 0; }
+    if (!exprRel()) { return 0; }
     exprEq1();
     return 1;
 };
@@ -302,9 +302,9 @@ int stm() {
     if (consume(FOR)) {
         if (!consume(LPAR)) { crtTkErr("missing ( after for declaration"); }
         expr();
-        if (!consume(SEMICOLON)) { crtTkErr("missing ; in for declaration"); }
+        if (!consume(SEMICOLON)) { crtTkErr("missing ; in for declaration after init"); }
         expr();
-        if (!consume(SEMICOLON)) { crtTkErr("missing ; in for declaration"); }
+        if (!consume(SEMICOLON)) { crtTkErr("missing ; in for declaration after condition"); }
         expr();
         if (!consume(RPAR)) { crtTkErr("missing ) in for declaration"); }
         if (!stm()) { crtTkErr("invalid for body"); }
@@ -391,9 +391,30 @@ int typeBase() {
 
 int declVar() {
     debug("declVar");
-    if (!typeBase()) { return 0; }
-    if (!consume(ID)) { tkerr(crtTk, "missing variable name after type declaration"); }
-    return 1;
+    Token *startTk = crtTk;
+    int isDV;
+    if (typeBase()) {
+        if (consume(ID)) {
+            isDV = arrayDecl();
+            while (1) {
+                if (consume(COMMA)) {
+                    isDV = 1;
+                    if (consume(ID)) {
+                        arrayDecl();
+                    } else {
+                        crtTkErr("missing variable name after ,");
+                    }
+                } else break;
+            }
+            if (consume(SEMICOLON)) {
+                return 1;
+            } else {
+                if (isDV) crtTkErr("missing ; after variable declaration");
+            }
+        }
+    }
+    crtTk = startTk;
+    return 0;
 }
 
 int declStruct() {
@@ -413,9 +434,9 @@ int unit() {
     debug("unit");
     while (1) {
         if (!declVar() && !declStruct() && !declFunc()) break;
-        if (!consume(END)) crtTkErr("end not found");
-        return 1;
     }
+    if (!consume(END)) crtTkErr("end not found");
+    return 1;
 }
 
 void sintactic() {
