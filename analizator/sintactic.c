@@ -16,7 +16,9 @@ void crtTkErr(const char *fmt) {
 int debugging = 1;
 
 void debug(char *name) {
-    printf("@%s %s\n", name, atomToString(crtTk));
+    if (debugging) {
+        printf("@%s %s\n", name, atomToString(crtTk));
+    }
 }
 
 int consume(int code) {
@@ -51,6 +53,7 @@ int typename() {
 
 int exprPrimary() {
     debug("exprPrimary");
+    Token *startTk = crtTk;
     if (consume(ID)) {
         if (consume(LPAR)) {
             if (expr()) {
@@ -80,7 +83,7 @@ int exprPrimary() {
         if (!consume(RPAR)) { crtTkErr("missing )"); }
         return 1;
     }
-    Token *startTk = crtTk;
+    crtTk = startTk;
     return 0;
 
 }
@@ -98,7 +101,11 @@ int exprPrimary() {
 
 int exprPostfix() {
     debug("exprPostfix");
-    if (exprPrimary() || exprPostfix1()) { return 1; }
+    Token *startTk = crtTk;
+    if (exprPrimary()) {
+        if (exprPostfix1()) { return 1; }
+    }
+    crtTk = startTk;
     return 0;
 }
 
@@ -107,10 +114,11 @@ int exprPostfix1() {
     if (consume(LBRACKET)) {
         if (!expr()) { crtTkErr("invalid expression"); }
         if (!consume(RBRACKET)) { crtTkErr("missing }"); }
-        if (!exprPostfix()) { crtTkErr("invalid expression"); }
-    } else if (consume(DOT)) {
+        if (!exprPostfix1()) { crtTkErr("invalid expression"); }
+    }
+    if (consume(DOT)) {
         if (!consume(ID)) { crtTkErr("missing id after ."); }
-        if (!exprPostfix()) { crtTkErr("invalid expression"); }
+        if (!exprPostfix1()) { crtTkErr("invalid expression"); }
     }
     return 1;
 }
@@ -148,7 +156,7 @@ int exprCast() {
 int exprMul1() {
     debug("exprMul1");
     if (consume(MUL) || consume(DIV)) {
-        if (!exprCast()) { crtTkErr("invalid expr"); }
+        if (!exprCast()) { crtTkErr("invalid exprs"); }
         exprMul1();
     }
     return 1;

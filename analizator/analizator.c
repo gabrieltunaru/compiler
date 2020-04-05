@@ -223,7 +223,7 @@ int getNextToken() {
                     state = 3;
                     pCrtCh++;
                 } else {
-                    pCrtCh++;
+//                    pCrtCh++;
                     state = 16;
                 }
                 break;
