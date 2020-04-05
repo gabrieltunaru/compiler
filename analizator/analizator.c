@@ -117,6 +117,8 @@ double makeReal(const char *pStartCh, const char *pCrtCh) {
 char *code = NULL;
 const char *pCrtCh;
 
+
+char atomName[10];
 int getNextToken() {
     int state = 0, length;
     char ch, escaped;
@@ -573,133 +575,135 @@ int getNextToken() {
         }
     }
 }
-
+const char *atomToString(Token *token) {
+    switch (token->code) {
+        case ID:
+            sprintf(atomName, "%s: %s ", "ID", token->text);
+            return atomName;
+        case BREAK:
+            sprintf(atomName, "%s", "BREAK");
+            return atomName;
+        case CHAR:
+            sprintf(atomName, "%s", "CHAR");
+            return atomName;
+        case DOUBLE:
+            sprintf(atomName, "%s", "DOUBLE");
+            return atomName;
+        case ELSE:
+            sprintf(atomName, "%s", "ELSE");
+            return atomName;
+        case FOR:
+            sprintf(atomName, "%s", "FOR");
+            return atomName;
+        case IF:
+            sprintf(atomName, "%s", "IF");
+            return atomName;
+        case INT:
+            sprintf(atomName, "%s", "INT");
+            return atomName;
+        case RETURN:
+            sprintf(atomName, "%s", "RETURN");
+            return atomName;
+        case STRUCT:
+            sprintf(atomName, "%s", "STRUCT");
+            return atomName;
+        case VOID:
+            sprintf(atomName, "%s", "VOID");
+            return atomName;
+        case WHILE:
+            sprintf(atomName, "%s", "WHILE");
+            return atomName;
+        case CT_INT:
+            sprintf(atomName, "%s:%d", "CT_INT", token->i);
+            return atomName;
+        case CT_REAL:
+            sprintf(atomName, "%s:%f", "CT_REAL", token->r);
+            return atomName;
+        case CT_CHAR:
+            sprintf(atomName, "%s:%c", "CT_CHAR", token->i);
+            return atomName;
+        case CT_STRING:
+            sprintf(atomName, "%s:%s", "CT_STRING", token->text);
+            return atomName;
+        case COMMA:
+            sprintf(atomName, "%s", "COMMA");
+            return atomName;
+        case SEMICOLON:
+            sprintf(atomName, "%s", "SEMICOLON");
+            return atomName;
+        case LPAR:
+            sprintf(atomName, "%s", "LPAR");
+            return atomName;
+        case RPAR:
+            sprintf(atomName, "%s", "RPAR");
+            return atomName;
+        case LBRACKET:
+            sprintf(atomName, "%s", "LBRACKET");
+            return atomName;
+        case RBRACKET:
+            sprintf(atomName, "%s", "RBRACKET");
+            return atomName;
+        case LACC:
+            sprintf(atomName, "%s", "LACC");
+            return atomName;
+        case RACC:
+            sprintf(atomName, "%s", "RACC");
+            return atomName;
+        case ADD:
+            sprintf(atomName, "%s", "ADD");
+            return atomName;
+        case SUB:
+            sprintf(atomName, "%s", "SUB");
+            return atomName;
+        case MUL:
+            sprintf(atomName, "%s", "MUL");
+            return atomName;
+        case DIV:
+            sprintf(atomName, "%s", "DIV");
+            return atomName;
+        case DOT:
+            sprintf(atomName, "%s", "DOT");
+            return atomName;
+        case AND:
+            sprintf(atomName, "%s", "AND");
+            return atomName;
+        case OR:
+            sprintf(atomName, "%s", "OR");
+            return atomName;
+        case NOT:
+            sprintf(atomName, "%s", "NOT");
+            return atomName;
+        case ASSIGN:
+            sprintf(atomName, "%s", "ASSIGN");
+            return atomName;
+        case EQUAL:
+            sprintf(atomName, "%s", "EQUAL");
+            return atomName;
+        case NOTEQ:
+            sprintf(atomName, "%s", "NOTEQ");
+            return atomName;
+        case LESS:
+            sprintf(atomName, "%s", "LESS");
+            return atomName;
+        case LESSEQ:
+            sprintf(atomName, "%s", "LESSEQ");
+            return atomName;
+        case GREATER:
+            sprintf(atomName, "%s", "GREATER");
+            return atomName;
+        case GREATEREQ:
+            sprintf(atomName, "%s", "GREATEREQ");
+            return atomName;
+        case END:
+            sprintf(atomName, "%s", "END");
+            return atomName;
+    }
+}
 void showAtoms() {
     Token *token = tokens;
     while (token) {
         printf("%d ", token->line);
-        switch (token->code) {
-            case ID:
-                printf("%s: %s ", "ID", token->text);
-                break;
-            case BREAK:
-                printf("%s", "BREAK");
-                break;
-            case CHAR:
-                printf("%s", "CHAR");
-                break;
-            case DOUBLE:
-                printf("%s", "DOUBLE");
-                break;
-            case ELSE:
-                printf("%s", "ELSE");
-                break;
-            case FOR:
-                printf("%s", "FOR");
-                break;
-            case IF:
-                printf("%s", "IF");
-                break;
-            case INT:
-                printf("%s", "INT");
-                break;
-            case RETURN:
-                printf("%s", "RETURN");
-                break;
-            case STRUCT:
-                printf("%s", "STRUCT");
-                break;
-            case VOID:
-                printf("%s", "VOID");
-                break;
-            case WHILE:
-                printf("%s", "WHILE");
-                break;
-            case CT_INT:
-                printf("%s:%d", "CT_INT", token->i);
-                break;
-            case CT_REAL:
-                printf("%s:%f", "CT_REAL", token->r);
-                break;
-            case CT_CHAR:
-                printf("%s:%c", "CT_CHAR", token->i);
-                break;
-            case CT_STRING:
-                printf("%s:%s", "CT_STRING", token->text);
-                break;
-            case COMMA:
-                printf("%s", "COMMA");
-                break;
-            case SEMICOLON:
-                printf("%s", "SEMICOLON");
-                break;
-            case LPAR:
-                printf("%s", "LPAR");
-                break;
-            case RPAR:
-                printf("%s", "RPAR");
-                break;
-            case LBRACKET:
-                printf("%s", "LBRACKET");
-                break;
-            case RBRACKET:
-                printf("%s", "RBRACKET");
-                break;
-            case LACC:
-                printf("%s", "LACC");
-                break;
-            case RACC:
-                printf("%s", "RACC");
-                break;
-            case ADD:
-                printf("%s", "ADD");
-                break;
-            case SUB:
-                printf("%s", "SUB");
-                break;
-            case MUL:
-                printf("%s", "MUL");
-                break;
-            case DIV:
-                printf("%s", "DIV");
-                break;
-            case DOT:
-                printf("%s", "DOT");
-                break;
-            case AND:
-                printf("%s", "AND");
-                break;
-            case OR:
-                printf("%s", "OR");
-                break;
-            case NOT:
-                printf("%s", "NOT");
-                break;
-            case ASSIGN:
-                printf("%s", "ASSIGN");
-                break;
-            case EQUAL:
-                printf("%s", "EQUAL");
-                break;
-            case NOTEQ:
-                printf("%s", "NOTEQ");
-                break;
-            case LESS:
-                printf("%s", "LESS");
-                break;
-            case LESSEQ:
-                printf("%s", "LESSEQ");
-                break;
-            case GREATER:
-                printf("%s", "GREATER");
-                break;
-            case GREATEREQ:
-                printf("%s", "GREATEREQ");
-                break;
-            case END:
-                printf("%s", "END");
-                break;
-        }
+        printf("%s", atomToString(token));
         printf("\n");
         token = token->next;
     }
