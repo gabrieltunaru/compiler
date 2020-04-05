@@ -60,5 +60,8 @@ typedef struct _Token {
     struct _Token *next; // inlantuire la urmatorul AL
 } Token;
 
-Token* lexical(char*);
+Token *lexical(char *);
+
+const char *atomToString(Token *token);
+
 void tkerr(const Token *tk, const char *fmt, ...);

@@ -2,14 +2,21 @@
 // Created by tunarug on 28.03.2020.
 //
 #include <stdlib.h>
+#include <stdio.h>
 #include "analizator.h"
 
 Token *tokens;
 
-Token *crtTk = NULL, *consumedTk = NULL, *startTk = NULL;
+Token *crtTk = NULL, *consumedTk = NULL;
 
 void crtTkErr(const char *fmt) {
     tkerr(crtTk, fmt);
+}
+
+int debugging = 1;
+
+void debug(char *name) {
+    printf("@%s %s\n", name, atomToString(crtTk));
 }
 
 int consume(int code) {
@@ -43,6 +50,7 @@ int typename() {
 
 
 int exprPrimary() {
+    debug("exprPrimary");
     if (consume(ID)) {
         if (consume(LPAR)) {
             if (expr()) {
@@ -72,7 +80,7 @@ int exprPrimary() {
         if (!consume(RPAR)) { crtTkErr("missing )"); }
         return 1;
     }
-    startTk = crtTk;
+    Token *startTk = crtTk;
     return 0;
 
 }
@@ -89,11 +97,13 @@ int exprPrimary() {
  */
 
 int exprPostfix() {
+    debug("exprPostfix");
     if (exprPrimary() || exprPostfix1()) { return 1; }
     return 0;
 }
 
 int exprPostfix1() {
+    debug("exprPostfix1");
     if (consume(LBRACKET)) {
         if (!expr()) { crtTkErr("invalid expression"); }
         if (!consume(RBRACKET)) { crtTkErr("missing }"); }
@@ -106,6 +116,7 @@ int exprPostfix1() {
 }
 
 int exprUnary() {
+    debug("exprUnary");
     if (consume(SUB) || consume(NOT)) {
         if (!exprUnary()) { crtTkErr("invalid expr"); }
     } else if (!exprPostfix()) { return 0; }
@@ -113,6 +124,7 @@ int exprUnary() {
 }
 
 int exprCast() {
+    debug("exprCast");
     if (!consume(LPAR)) {
         if (exprUnary()) {
             return 1;
@@ -134,6 +146,7 @@ int exprCast() {
  */
 
 int exprMul1() {
+    debug("exprMul1");
     if (consume(MUL) || consume(DIV)) {
         if (!exprCast()) { crtTkErr("invalid expr"); }
         exprMul1();
@@ -142,6 +155,7 @@ int exprMul1() {
 }
 
 int exprMul() {
+    debug("exprMul");
     if (!exprCast()) { return 0; }
     exprMul1();
     return 1;
@@ -154,6 +168,7 @@ int exprMul() {
  */
 
 int exprAdd1() {
+    debug("exprAdd1");
     if (consume(ADD) || consume(SUB)) {
         if (!exprCast()) { crtTkErr("invalid expr"); }
         exprAdd1();
@@ -162,11 +177,13 @@ int exprAdd1() {
 }
 
 int exprAdd() {
+    debug("exprAdd");
     if (!exprMul()) { return 0; }
     if (exprAdd1()) { return 1; }
 }
 
 int exprRel1() {
+    debug("exprRel1");
     if (consume(LESS) || consume(LESSEQ) || consume(GREATER) || consume(GREATEREQ)) {
         if (!exprAdd()) { crtTkErr("invalid expr"); }
         exprRel1();
@@ -175,12 +192,14 @@ int exprRel1() {
 }
 
 int exprRel() {
+    debug("exprRel");
     if (!exprAdd()) { return 0; }
     exprRel1();
     return 1;
 }
 
 int exprEq1() {
+    debug("exprEq1");
     if (consume(EQUAL) || consume(NOTEQ)) {
         if (!exprRel()) { crtTkErr("invalid expr"); }
         exprEq1();
@@ -189,12 +208,14 @@ int exprEq1() {
 }
 
 int exprEq() {
+    debug("exprEq");
     if (!exprAdd()) { return 0; }
     exprEq1();
     return 1;
 };
 
 int exprAnd1() {
+    debug("exprAnd1");
     if (consume(AND)) {
         if (!exprEq()) { crtTkErr("invalid expr"); }
         exprAnd1();
@@ -203,11 +224,13 @@ int exprAnd1() {
 }
 
 int exprAnd() {
+    debug("exprAnd");
     if (!exprEq()) { return 0; }
-    return exprEq1();
+    return exprAnd1();
 }
 
 int exprOr1() {
+    debug("exprOr1");
     if (consume(OR)) {
         if (!exprAnd()) { crtTkErr("invalid expr"); }
         exprOr1();
@@ -216,30 +239,38 @@ int exprOr1() {
 }
 
 int exprOr() {
+    debug("exprOr");
     if (!exprAnd()) { return 0; }
     return exprOr1();
 }
 
 int exprAssign() {
-    startTk = crtTk;
-    if (!exprUnary()) {
-        if (exprOr()) { return 1; }
-        else {
-            crtTk = startTk;
-            return 0;
+    debug("exprAssign");
+    Token *startTk = crtTk;
+    if (exprUnary()) {
+        if (consume(ASSIGN)) {
+            if (exprAssign()) {
+                return 1;
+            } else {
+                crtTkErr("invalid expression after =");
+            }
         }
+        crtTk = startTk;
     }
-    if (!consume(ASSIGN)) { crtTkErr("missing = after expression "); }
-    if (!exprAssign()) { crtTkErr("missing expr after ="); }
-    return 1;
+    if (exprOr()) {
+        return 1;
+    }
+    return 0;
 }
 
 int expr() {
+    debug("expr");
     return exprAssign();
 }
 
 int stmCompound() {
-    startTk = crtTk;
+    debug("stmCompound");
+    Token *startTk = crtTk;
     if (!consume(LACC)) { return 0; }
     while (1) {
         if (!declVar() && !stm()) { break; }
@@ -249,6 +280,8 @@ int stmCompound() {
 }
 
 int stm() {
+    debug("stm");
+    if (stmCompound()) { return 1; }
     if (consume(IF)) {
         if (!consume(LPAR)) { crtTkErr("missing ( after if declaration"); }
         if (!expr()) { crtTkErr("invalid boolean condition after ("); }
@@ -294,6 +327,7 @@ int stm() {
 }
 
 int funcArg() {
+    debug("funcArg");
     if (typeBase()) {
         if (!consume(ID)) { crtTkErr("missing id after type declaration"); }
         arrayDecl();
@@ -303,7 +337,8 @@ int funcArg() {
 }
 
 int declFunc() {
-    startTk = crtTk;
+    debug("declFunc");
+    Token *startTk = crtTk;
     if (!consume(VOID)) {
         if (!typeBase()) { return 0; }
         else {
@@ -320,24 +355,27 @@ int declFunc() {
         if (!consume(COMMA)) { break; }
         if (!funcArg()) { crtTkErr("missing argument after ,"); }
     }
-    if(!consume(RPAR)) {crtTkErr("missing ) in function signature");}
-    if(!stmCompound()) crtTkErr("invalid function body");
+    if (!consume(RPAR)) { crtTkErr("missing ) in function signature"); }
+    if (!stmCompound()) crtTkErr("invalid function body");
     return 1;
 }
 
 int typeName() {
-    if(!typeBase()) return 0;
+    debug("typeName");
+    if (!typeBase()) return 0;
     arrayDecl();
 }
 
 int arrayDecl() {
-    if(!consume(LBRACKET)) return 0;
+    debug("arrayDecl");
+    if (!consume(LBRACKET)) return 0;
     expr();
-    if(!consume(RBRACKET)) crtTkErr("missing ] in type declaration");
+    if (!consume(RBRACKET)) crtTkErr("missing ] in type declaration");
     return 1;
 }
 
 int typeBase() {
+    debug("typeBase");
     if (consume(INT) || consume(DOUBLE) || consume(CHAR)) {
         return 1;
     }
@@ -352,12 +390,14 @@ int typeBase() {
 }
 
 int declVar() {
+    debug("declVar");
     if (!typeBase()) { return 0; }
     if (!consume(ID)) { tkerr(crtTk, "missing variable name after type declaration"); }
     return 1;
 }
 
 int declStruct() {
+    debug("declStruct");
     if (!consume(STRUCT)) { return 0; }
     if (!consume(ID)) { tkerr(crtTk, "missing id after struct declaration"); }
     if (!consume(LACC)) { tkerr(crtTk, "missing {"); }
@@ -370,9 +410,10 @@ int declStruct() {
 }
 
 int unit() {
-    while(1) {
-        if(!declVar()&&!declStruct()&&!declFunc()) break;
-        if(!consume(END)) crtTkErr("end not found");
+    debug("unit");
+    while (1) {
+        if (!declVar() && !declStruct() && !declFunc()) break;
+        if (!consume(END)) crtTkErr("end not found");
         return 1;
     }
 }

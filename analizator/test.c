@@ -1,10 +1,19 @@
-/*
-testare analizor lexical
-*/
+struct Pt{
+    int x,y;
+};
+
+struct Pt		points[20/4+5];
+
+int		count()
+{
+    int		i,n;
+    for(i=n=0;i<10;i=i+1){
+        if(points[i].x>=0&&points[i].y>=0)n=n+1;
+    }
+    return n;
+}
+
 void main()
 {
-    if(0xc==014)put_s("\"egal\"\t\t(h,o)");
-    else put_s("\"inegal\"\t\t(h,o)");
-    if(20E-1==2.0&&0.2e+1==0x2)put_c('=');  // 2 scris in diverse feluri
-    else put_c('\\');
+    put_i(count());
 }
