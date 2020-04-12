@@ -80,7 +80,7 @@ int exprPrimary() {
         if (!expr()) {
             crtTkErr("invalid expr");
         }
-        if (!consume(RPAR)) { crtTkErr("missing )"); }
+        if (!consume(RPAR)) { crtTkErr("missing ) in primary expression"); }
         return 1;
     }
     crtTk = startTk;
@@ -141,7 +141,7 @@ int exprCast() {
         }
     }
     if (!typename()) { crtTkErr("invalid type name after ("); }
-    if (!consume(RPAR)) { crtTkErr("missing )"); }
+    if (!consume(RPAR)) { crtTkErr("missing ) in cast"); }
     if (!exprCast()) { crtTkErr("invalid expression"); }
     return 1;
 }
@@ -156,7 +156,7 @@ int exprCast() {
 int exprMul1() {
     debug("exprMul1");
     if (consume(MUL) || consume(DIV)) {
-        if (!exprCast()) { crtTkErr("invalid exprs"); }
+        if (!exprCast()) { crtTkErr("invalid expr after * or /"); }
         exprMul1();
     }
     return 1;
@@ -178,7 +178,7 @@ int exprMul() {
 int exprAdd1() {
     debug("exprAdd1");
     if (consume(ADD) || consume(SUB)) {
-        if (!exprCast()) { crtTkErr("invalid expr"); }
+        if (!exprCast()) { crtTkErr("invalid expr after +-"); }
         exprAdd1();
     }
     return 1;
@@ -193,7 +193,7 @@ int exprAdd() {
 int exprRel1() {
     debug("exprRel1");
     if (consume(LESS) || consume(LESSEQ) || consume(GREATER) || consume(GREATEREQ)) {
-        if (!exprAdd()) { crtTkErr("invalid expr"); }
+        if (!exprAdd()) { crtTkErr("invalid expr after comparator"); }
         exprRel1();
     }
     return 1;
@@ -209,7 +209,7 @@ int exprRel() {
 int exprEq1() {
     debug("exprEq1");
     if (consume(EQUAL) || consume(NOTEQ)) {
-        if (!exprRel()) { crtTkErr("invalid expr"); }
+        if (!exprRel()) { crtTkErr("invalid expr after =="); }
         exprEq1();
     }
     return 1;
@@ -225,7 +225,7 @@ int exprEq() {
 int exprAnd1() {
     debug("exprAnd1");
     if (consume(AND)) {
-        if (!exprEq()) { crtTkErr("invalid expr"); }
+        if (!exprEq()) { crtTkErr("invalid expr after &&"); }
         exprAnd1();
     }
     return 1;
@@ -240,7 +240,7 @@ int exprAnd() {
 int exprOr1() {
     debug("exprOr1");
     if (consume(OR)) {
-        if (!exprAnd()) { crtTkErr("invalid expr"); }
+        if (!exprAnd()) { crtTkErr("invalid expr after ||"); }
         exprOr1();
     }
     return 1;
@@ -283,7 +283,7 @@ int stmCompound() {
     while (1) {
         if (!declVar() && !stm()) { break; }
     }
-    if (!consume(RACC)) { crtTkErr("missing )"); }
+    if (!consume(RACC)) { crtTkErr("missing ) in statement"); }
     return 1;
 }
 
@@ -391,7 +391,7 @@ int typeBase() {
         if (consume(ID)) {
             return 1;
         } else {
-            crtTkErr("missing id after struct");
+            crtTkErr("missing struct name");
         }
     }
     return 0;
@@ -428,13 +428,13 @@ int declVar() {
 int declStruct() {
     debug("declStruct");
     if (!consume(STRUCT)) { return 0; }
-    if (!consume(ID)) { tkerr(crtTk, "missing id after struct declaration"); }
-    if (!consume(LACC)) { tkerr(crtTk, "missing {"); }
+    if (!consume(ID)) { tkerr(crtTk, "missing name after struct declaration"); }
+    if (!consume(LACC)) { tkerr(crtTk, "missing { in struct declaration"); }
     while (1) {
         if (!declVar()) { break; }
     }
-    if (!consume(RACC)) { tkerr(crtTk, "missing }"); }
-    if (!consume(SEMICOLON)) { tkerr(crtTk, "missing ;"); }
+    if (!consume(RACC)) { tkerr(crtTk, "missing } in struct declaration"); }
+    if (!consume(SEMICOLON)) { tkerr(crtTk, "missing ; after struct declaration"); }
     return 1;
 }
 
@@ -443,7 +443,7 @@ int unit() {
     while (1) {
         if (!declVar() && !declStruct() && !declFunc()) break;
     }
-    if (!consume(END)) crtTkErr("end not found");
+    if (!consume(END)) crtTkErr("unexpected token");
     return 1;
 }
 

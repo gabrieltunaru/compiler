@@ -733,7 +733,7 @@ void read_file(char *file_name) {
 void start() {
     pCrtCh = &code[0];
     while (getNextToken() != END);
-    showAtoms();
+//    showAtoms();
 }
 
 Token *lexical(char *file) {
