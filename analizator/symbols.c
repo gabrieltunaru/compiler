@@ -3,7 +3,7 @@
 //
 #include <stdlib.h>
 #include <string.h>
-
+#include <stdio.h>
 #include "symbols.h"
 #include "analizator.h"
 
@@ -34,16 +34,17 @@ Symbol *addSymbol(Symbols *symbols, const char *name, int cls) {
 
 Symbol *findSymbol(Symbols *symbols, const char *name) {
     for (Symbol **s = symbols->end; s != symbols->begin; s--) {
-        if (!strcmp((*s)->name, name)) {
-            return *s;
-        }
+        printf("\n%s\n",name);
+//        if (!strcmp((*s)->name, name)) {
+//            return *s;
+//        }
     }
     return NULL;
 }
 
-void deleteSymbolsAfter(Symbols *symbols, Symbol symbol) {
+void deleteSymbolsAfter(Symbols *symbols, Symbol *symbol) {
     Symbol **curr = symbols->end,**next;
-    while (*curr != &symbol) {
+    while (*curr != symbol) {
         next=curr--;
         free(curr);
         curr=next;

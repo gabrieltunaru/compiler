@@ -7,6 +7,7 @@
 
 #endif //ANALIZATOR_SYMBOLS_H
 
+
 enum {
     TB_INT, TB_DOUBLE, TB_CHAR, TB_STRUCT, TB_VOID
 };
@@ -55,4 +56,4 @@ Symbol *addSymbol(Symbols *symbols, const char *name, int cls);
 
 Symbol *findSymbol(Symbols *symbols, const char *name);
 
-void deleteSymbolsAfter(Symbols *symbols, Symbol symbol);
+void deleteSymbolsAfter(Symbols *symbols, Symbol *symbol);
