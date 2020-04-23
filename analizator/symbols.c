@@ -33,21 +33,28 @@ Symbol *addSymbol(Symbols *symbols, const char *name, int cls) {
 }
 
 Symbol *findSymbol(Symbols *symbols, const char *name) {
-    for (Symbol **s = symbols->end; s != symbols->begin; s--) {
-        printf("\n%s\n",name);
-//        if (!strcmp((*s)->name, name)) {
-//            return *s;
-//        }
+    long n = symbols->end - symbols->begin;
+    for (long i = 0; i < n; i++) {
+        if (symbols->begin[i]->name != NULL) {
+            if (!strcmp(symbols->begin[i]->name, name)) {
+                return symbols->begin[i];
+            }
+        }
     }
     return NULL;
 }
 
 void deleteSymbolsAfter(Symbols *symbols, Symbol *symbol) {
-    Symbol **curr = symbols->end,**next;
-    while (*curr != symbol) {
-        next=curr--;
-        free(curr);
-        curr=next;
+    long n = symbols->end - symbols->begin;
+    for (long i = 0; i < n; i++) {
+        if(symbols->begin[i]==symbol) {
+            for (long j=n-1;j>i;i++) {
+                free(symbols->begin[j]);
+                symbols->begin[j]=NULL;
+                n--;
+            }
+        }
     }
+    symbols->end=&symbols->begin[n];
 }
 

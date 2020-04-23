@@ -511,15 +511,19 @@ int declVar() {
 
 int declStruct() {
     Token *tkName;
+    Token *start = crtTk;
     debug("declStruct");
     if (!consume(STRUCT)) { return 0; }
     if (!consume(ID)) { tkerr(crtTk, "missing name after struct declaration"); }
     tkName = consumedTk;
+    if (!consume(LACC)) {
+        crtTk = start;
+        return 0;
+    }
     if (findSymbol(&symbols, tkName->text))
         tkerr(tkName, "symbol redefinition: %s", tkName->text);
     crtStruct = addSymbol(&symbols, tkName->text, CLS_STRUCT);
     initSymbols(&crtStruct->members);
-    if (!consume(LACC)) { tkerr(crtTk, "missing { in struct declaration"); }
     while (1) {
         if (!declVar()) { break; }
     }
@@ -532,14 +536,14 @@ int declStruct() {
 int unit() {
     debug("unit");
     while (1) {
-        if (!declStruct() &&  !declFunc() && !declVar() ) break;
+        if (!declStruct() && !declFunc() && !declVar()  ) break;
     }
     if (!consume(END)) crtTkErr("unexpected token");
     return 1;
 }
 
 void sintactic() {
-    crtDepth=0;
+    crtDepth = 0;
     tokens = lexical("/home/tunarug/custom/gitprojects/facultate/lftc/analizator/test.c");
     crtTk = tokens;
     unit();
