@@ -6,6 +6,10 @@
 #define ANALIZATOR_ANALIZATOR_H
 
 #endif //ANALIZATOR_ANALIZATOR_H
+
+#define SAFEALLOC(var, Type) if((var=(Type*)malloc(sizeof(Type)))==NULL)err("not enough memory");
+
+
 enum {
     ID,
     BREAK,
@@ -63,5 +67,7 @@ typedef struct _Token {
 Token *lexical(char *);
 
 const char *atomToString(Token *token);
+
+void err(const char *fmt, ...);
 
 void tkerr(const Token *tk, const char *fmt, ...);

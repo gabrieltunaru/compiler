@@ -5,7 +5,6 @@
 #include <stdarg.h>
 #include "analizator.h"
 
-#define SAFEALLOC(var, Type) if((var=(Type*)malloc(sizeof(Type)))==NULL)err("not enough memory");
 
 int line = 1;
 Token *tokens = NULL, *lastToken = NULL;

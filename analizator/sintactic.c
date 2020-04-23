@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "analizator.h"
+#include "symbols.h"
 
 Token *tokens;
 
@@ -13,7 +14,7 @@ void crtTkErr(const char *fmt) {
     tkerr(crtTk, fmt);
 }
 
-int debugging = 1;
+int debugging = 0;
 
 void debug(char *name) {
     if (debugging) {
@@ -427,7 +428,12 @@ int declVar() {
 
 int declStruct() {
     debug("declStruct");
+    Symbol *crtStruct;
     if (!consume(STRUCT)) { return 0; }
+    if (findSymbol(&symbols, crtTk->text))
+        tkerr(crtTk, "symbol redefinition: %s", crtTk->text);
+    crtStruct = addSymbol(&symbols, crtTk->text, CLS_STRUCT);
+    initSymbols(&crtStruct->members);
     if (!consume(ID)) { tkerr(crtTk, "missing name after struct declaration"); }
     if (!consume(LACC)) { tkerr(crtTk, "missing { in struct declaration"); }
     while (1) {
@@ -435,6 +441,7 @@ int declStruct() {
     }
     if (!consume(RACC)) { tkerr(crtTk, "missing } in struct declaration"); }
     if (!consume(SEMICOLON)) { tkerr(crtTk, "missing ; after struct declaration"); }
+    crtStruct = NULL;
     return 1;
 }
 
