@@ -63,6 +63,7 @@ typedef struct _Token {
     int line; // linia din fisierul de intrare
     struct _Token *next; // inlantuire la urmatorul AL
 } Token;
+extern Token *crtTk;
 
 Token *lexical(char *);
 

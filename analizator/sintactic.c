@@ -3,7 +3,7 @@
 //
 #include <stdlib.h>
 #include <stdio.h>
-#include "analizator.h"
+//#include "analizator.h"
 #include "symbols.h"
 
 Token *tokens;

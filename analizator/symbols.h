@@ -8,6 +8,7 @@
 #endif //ANALIZATOR_SYMBOLS_H
 
 
+#include "analizator.h"
 enum {
     TB_INT, TB_DOUBLE, TB_CHAR, TB_STRUCT, TB_VOID
 };
@@ -48,7 +49,7 @@ typedef struct _Symbol {
 
 int crtDepth;
 
-Symbols symbols;
+extern Symbols symbols;
 
 void initSymbols(Symbols *symbols);
 
