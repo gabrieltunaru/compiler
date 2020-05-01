@@ -58,3 +58,20 @@ Symbol *addSymbol(Symbols *symbols, const char *name, int cls);
 Symbol *findSymbol(Symbols *symbols, const char *name);
 
 void deleteSymbolsAfter(Symbols *symbols, Symbol *symbol);
+
+typedef union{
+    long int i; // int, char
+    double d; // double
+    const char *str; // char[]
+}CtVal;
+typedef struct{
+    Type type; // type of the result
+    int isLVal; // if it is a LVal
+    int isCtVal; // if it is a constant value (int, real, char, char[])
+    CtVal ctVal; // the constat value
+}RetVal;
+
+void cast(Type *dst, Type *src);
+Type createType(int type, int nElements) ;
+Type getArithType(Type *s1, Type *s2);
+void addInitFuncs();

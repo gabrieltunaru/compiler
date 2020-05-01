@@ -155,3 +155,4 @@ void addInitFuncs() {
     s=addExtFunc("get_c", createType(TB_CHAR,-1));
     s=addExtFunc("seconds", createType(TB_DOUBLE,-1));
 }
+
