@@ -14,7 +14,7 @@ void crtTkErr(const char *fmt) {
     tkerr(crtTk, fmt);
 }
 
-int debugging = 1;
+int debugging = 0;
 
 void debug(char *name) {
     if (debugging) {
@@ -426,7 +426,7 @@ int stmCompound() {
     while (1) {
         if (!declVar() && !stm()) { break; }
     }
-    if (!consume(RACC)) { crtTkErr("missing ) in statement"); }
+    if (!consume(RACC)) { crtTkErr("invalid statement or missing }"); }
     crtDepth--;
     deleteSymbolsAfter(&symbols, start);
     return 1;
@@ -435,6 +435,7 @@ int stmCompound() {
 int stm() {
     debug("stm");
     RetVal rv;
+    Token *startTk = crtTk;
     if (stmCompound()) { return 1; }
     if (consume(IF)) {
         if (!consume(LPAR)) { crtTkErr("missing ( after if declaration"); }
@@ -489,6 +490,7 @@ int stm() {
     if (consume(SEMICOLON)) {
         return 1;
     }
+    crtTk=startTk;
     return 0;
 }
 

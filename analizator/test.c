@@ -1,22 +1,15 @@
-struct Pt{
-    int x,y;
+struct Pt {
+    int a,b;
 };
 
-struct Pt points[20];
-struct Pt v_struct;
-
-int		count()
-{
-    int		i,n;
-    double v_double;
-    v_double=v_struct;
-        for(i=n=0;i<10;i=i+1){
-        if(points[i].x>=0&&points[i].y>=0)n=n+1;
-    }
-    return n;
-}
-
-void main()
-{
-    put_i(count());
+int x() {
+    int a;
+    a=3;
+    double d;
+    d=2.0;
+    int c;
+    c=a+d;
+    char s[];
+    struct Pt y;
+    a=y;
 }
