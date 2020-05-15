@@ -45,6 +45,10 @@ typedef struct _Symbol {
         Symbols args; // used only of functions
         Symbols members; // used only for structs
     };
+    union{
+        void *addr; // vm: the memory address for global symbols
+        int offset; // vm: the stack offset for local symbols
+    };
 } Symbol;
 
 int crtDepth;
@@ -56,6 +60,7 @@ void initSymbols(Symbols *symbols);
 Symbol *addSymbol(Symbols *symbols, const char *name, int cls);
 
 Symbol *findSymbol(Symbols *symbols, const char *name);
+Symbol *requireSymbol(Symbols *symbols, const char *name);
 
 void deleteSymbolsAfter(Symbols *symbols, Symbol *symbol);
 

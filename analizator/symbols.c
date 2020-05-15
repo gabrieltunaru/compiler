@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "symbols.h"
+#include "ext_funcs.h"
 //#include "analizator.h"
 
 void initSymbols(Symbols *symbols) {
@@ -44,6 +45,18 @@ Symbol *findSymbol(Symbols *symbols, const char *name) {
         }
     }
     return NULL;
+}
+
+Symbol *requireSymbol(Symbols *symbols, const char *name) {
+    long n = symbols->end - symbols->begin;
+    for (long i = 0; i < n; i++) {
+        if (symbols->begin[i]->name != NULL) {
+            if (!strcmp(symbols->begin[i]->name, name)) {
+                return symbols->begin[i];
+            }
+        }
+    }
+    err("symbol not found");
 }
 
 void deleteSymbolsAfter(Symbols *symbols, Symbol *symbol) {
@@ -117,42 +130,42 @@ Type getArithType(Type *s1, Type *s2) {
     tkerr(crtTk, "incompatible types");
 }
 
-Symbol *addExtFunc(const char *name,Type type)
-{
-    Symbol *s=addSymbol(&symbols,name,CLS_EXTFUNC);
-    s->type=type;
+Symbol *addExtFunc(const char *name, Type type, void *addr) {
+    Symbol *s = addSymbol(&symbols, name, CLS_EXTFUNC);
+    s->type = type;
+    s->addr = addr;
     initSymbols(&s->args);
     return s;
 }
-Symbol *addFuncArg(Symbol *func,const char *name,Type type)
-{
-    Symbol *a=addSymbol(&func->args,name,CLS_VAR);
-    a->type=type;
+
+Symbol *addFuncArg(Symbol *func, const char *name, Type type) {
+    Symbol *a = addSymbol(&func->args, name, CLS_VAR);
+    a->type = type;
     return a;
 }
 
 Type createType(int type, int nElements) {
     Type t;
-    t.typeBase=type;
-    t.nElements=nElements;
+    t.typeBase = type;
+    t.nElements = nElements;
     return t;
 }
 
 void addInitFuncs() {
     Symbol *s;
-    s=addExtFunc("put_s", createType(TB_VOID,-1));
-    addFuncArg(s,"s",createType(TB_CHAR,0));
-    s=addExtFunc("get_s", createType(TB_VOID,-1));
-    addFuncArg(s,"s",createType(TB_CHAR,0));
-    s=addExtFunc("put_i", createType(TB_VOID,-1));
-    addFuncArg(s,"i",createType(TB_INT,-1));
-    s=addExtFunc("get_i", createType(TB_INT,-1));
-    s=addExtFunc("put_d", createType(TB_VOID,-1));
-    addFuncArg(s,"d",createType(TB_DOUBLE,-1));
-    s=addExtFunc("get_d", createType(TB_DOUBLE,-1));
-    s=addExtFunc("put_c", createType(TB_VOID,-1));
-    addFuncArg(s,"c",createType(TB_CHAR,-1));
-    s=addExtFunc("get_c", createType(TB_CHAR,-1));
-    s=addExtFunc("seconds", createType(TB_DOUBLE,-1));
+    s = addExtFunc("put_s", createType(TB_VOID, -1), put_s);
+    addFuncArg(s, "s", createType(TB_CHAR, 0));
+    s = addExtFunc("get_s", createType(TB_VOID, -1), get_s);
+    addFuncArg(s, "s", createType(TB_CHAR, 0));
+    s = addExtFunc("put_i", createType(TB_VOID, -1), put_i);
+    addFuncArg(s, "i", createType(TB_INT, -1));
+    s = addExtFunc("get_i", createType(TB_INT, -1), get_i);
+    s = addExtFunc("put_d", createType(TB_VOID, -1), put_d);
+    addFuncArg(s, "d", createType(TB_DOUBLE, -1));
+    s = addExtFunc("get_d", createType(TB_DOUBLE, -1), get_d);
+    s = addExtFunc("put_c", createType(TB_VOID, -1), put_c);
+    addFuncArg(s, "c", createType(TB_CHAR, -1));
+    s = addExtFunc("get_c", createType(TB_CHAR, -1), get_c);
+    s = addExtFunc("seconds", createType(TB_DOUBLE, -1), seconds);
 }
 
