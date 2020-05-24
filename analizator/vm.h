@@ -71,8 +71,8 @@ void *popa();
 
 void pushi(int i);
 
-double popi();
+int popi();
 
 void pushc(char c);
 
-double popc();
+char popc();
