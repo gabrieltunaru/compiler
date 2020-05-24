@@ -3,10 +3,12 @@
 //
 
 #include "vm.h"
-#include "analizator.h"
+//#include "analizator.h"
+#include "symbols.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "sintactic.h"
 
 void pushd(double d) {
     if (SP + sizeof(double) > stackAfter)err("out of stack");
@@ -91,45 +93,21 @@ Instr *addInstrAfter(Instr *after, int opcode) {
 }
 
 Instr *addInstrA(int opcode, void *addr) {
-    Instr *i = createInstr(opcode);
+    Instr *i = addInstr(opcode);
     i->args[0].addr = addr;
-    i->next = NULL;
-    i->last = lastInstruction;
-    if (lastInstruction) {
-        lastInstruction->next = i;
-    } else {
-        instructions = i;
-    }
-    lastInstruction = i;
     return i;
 }
 
 Instr *addInstrI(int opcode, int val) {
-    Instr *i = createInstr(opcode);
+    Instr *i = addInstr(opcode);
     i->args[0].i = val;
-    i->next = NULL;
-    i->last = lastInstruction;
-    if (lastInstruction) {
-        lastInstruction->next = i;
-    } else {
-        instructions = i;
-    }
-    lastInstruction = i;
     return i;
 }
 
 Instr *addInstrII(int opcode, int val1, int val2) {
-    Instr *i = createInstr(opcode);
+    Instr *i = addInstr(opcode);
     i->args[0].i = val1;
     i->args[1].i = val2;
-    i->next = NULL;
-    i->last = lastInstruction;
-    if (lastInstruction) {
-        lastInstruction->next = i;
-    } else {
-        instructions = i;
-    }
-    lastInstruction = i;
     return i;
 }
 
@@ -670,12 +648,39 @@ void run(Instr *IP) {
             case O_SUB_I:
                 iVal1 = popi();
                 iVal2 = popi();
-                printf("SUB_D\t(%d-%d -> %d)\n", iVal2, iVal1, iVal2 - iVal1);
-                pushd(iVal2 - iVal1);
+                printf("SUB_I\t(%d-%d -> %d)\n", iVal2, iVal1, iVal2 - iVal1);
+                pushi(iVal2 - iVal1);
                 IP = IP->next;
                 break;
             default:
                 err("invalid opcode: %d", IP->opcode);
         }
     }
+}
+
+void mvTest()
+{
+    Instr *L1;
+    int *v=allocGlobal(sizeof(int));
+    addInstrA(O_PUSHCT_A,v);
+    addInstrI(O_PUSHCT_I,3);
+    addInstrI(O_STORE,sizeof(int));
+    L1=addInstrA(O_PUSHCT_A,v);
+    addInstrI(O_LOAD,sizeof(int));
+    addInstrA(O_CALLEXT,requireSymbol(&symbols,"put_i")->addr);
+    addInstrA(O_PUSHCT_A,v);
+    addInstrA(O_PUSHCT_A,v);
+    addInstrI(O_LOAD,sizeof(int));
+    addInstrI(O_PUSHCT_I,1);
+    addInstr(O_SUB_I);
+    addInstrI(O_STORE,sizeof(int));
+    addInstrA(O_PUSHCT_A,v);
+    addInstrI(O_LOAD,sizeof(int));
+    addInstrA(O_JT_I,L1);
+    addInstr(O_HALT);
+}
+int main() {
+    sintactic();
+    mvTest();
+    run(instructions);
 }

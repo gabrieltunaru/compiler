@@ -11,5 +11,4 @@ int x() {
     c=a+d;
     char s[];
     struct Pt y;
-    a=y;
 }

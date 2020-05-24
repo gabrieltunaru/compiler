@@ -16,7 +16,7 @@ void get_s() {
 }
 
 void put_i() {
-    printf("#%ld\n", popi());
+    printf("#%d\n", popi());
 }
 
 void get_i() {
