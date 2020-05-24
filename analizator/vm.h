@@ -48,7 +48,7 @@ enum {O_ADD_C,O_ADD_D,O_ADD_I,
 typedef struct _Instr {
     int opcode; // O_*
     union {
-        long int i; // int, char
+        int i; // int, char
         double d;
         void *addr;
     } args[2];

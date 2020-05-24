@@ -150,7 +150,7 @@ void *allocGlobal(int size) {
 }
 
 void run(Instr *IP) {
-    long int iVal1, iVal2;
+    int iVal1, iVal2;
     double dVal1, dVal2;
     char *aVal1,aVal2;
     char *a1, *a2, *a;
@@ -159,7 +159,7 @@ void run(Instr *IP) {
     SP = stack;
     stackAfter = stack + STACK_SIZE;
     while (1) {
-        printf("%p/%d\t", IP, SP - stack);
+        printf("%p/%ld\t", IP, SP - stack);
         switch (IP->opcode) {
             case O_ADD_C:
                 cVal1 = popc();
@@ -193,21 +193,21 @@ void run(Instr *IP) {
                 cVal1 = popc();
                 cVal2 = popc();
                 printf("AND_C %c %c", cVal1, cVal2);
-                pushc(cVal1 && cVal2);
+                pushi(cVal1 && cVal2);
                 IP = IP->next;
                 break;
             case O_AND_D:
                 dVal1 = popd();
                 dVal2 = popd();
                 printf("AND_D %lf %lf", dVal1, dVal2);
-                pushd(dVal1 && dVal2);
+                pushi(dVal1 && dVal2);
                 IP = IP->next;
                 break;
             case O_AND_A:
                 a1 = popa();
                 a2 = popa();
-                printf("AND_A %lf %lf", a1, a2);
-                pusha(a1 && a2);
+                printf("AND_A %p %p", a1, a2);
+                pushi(a1 && a2);
                 IP = IP->next;
                 break;
             case O_CALL:
@@ -252,14 +252,14 @@ void run(Instr *IP) {
             case O_CAST_I_C:
                 iVal1 = popi();
                 cVal1 = (char) iVal1;
-                printf("O_CAST_I_C\t(%ld -> %c)\n", iVal1, cVal1);
+                printf("O_CAST_I_C\t(%d -> %c)\n", iVal1, cVal1);
                 pushd(cVal1);
                 IP = IP->next;
                 break;
             case O_CAST_I_D:
                 iVal1 = popi();
                 dVal1 = (double) iVal1;
-                printf("CAST_I_D\t(%ld -> %g)\n", iVal1, dVal1);
+                printf("CAST_I_D\t(%d -> %g)\n", iVal1, dVal1);
                 pushd(dVal1);
                 IP = IP->next;
                 break;
@@ -286,14 +286,14 @@ void run(Instr *IP) {
                 break;
             case O_DROP:
                 iVal1 = IP->args[0].i;
-                printf("DROP\t%ld\n", iVal1);
+                printf("DROP\t%d\n", iVal1);
                 if (SP - iVal1 < stack)err("not enough stack bytes");
                 SP -= iVal1;
                 IP = IP->next;
                 break;
             case O_ENTER:
                 iVal1 = IP->args[0].i;
-                printf("ENTER\t%ld\n", iVal1);
+                printf("ENTER\t%d\n", iVal1);
                 pusha(FP);
                 FP = SP;
                 SP += iVal1;
@@ -302,14 +302,14 @@ void run(Instr *IP) {
             case O_EQ_A:
                 a1 = popa();
                 a2 = popa();
-                printf("O_EQ_A\t(%d==%d -> %d)\n", a1, a2, a1 == a2);
+                printf("O_EQ_A\t(%p==%p -> %d)\n", a1, a2, a1 == a2);
                 pushi(a1 == a2);
                 IP = IP->next;
                 break;
             case O_EQ_C:
                 cVal1 = popc();
                 cVal2 = popc();
-                printf("O_EQ_C\t(%g==%g -> %lc)\n", cVal2, cVal1, cVal2 == cVal1);
+                printf("O_EQ_C\t(%c==%c -> %lc)\n", cVal2, cVal1, cVal2 == cVal1);
                 pushi(cVal2 == cVal1);
                 IP = IP->next;
                 break;
@@ -375,7 +375,7 @@ void run(Instr *IP) {
             case O_INSERT:
                 iVal1 = IP->args[0].i; // iDst
                 iVal2 = IP->args[1].i; // nBytes
-                printf("INSERT\t%ld,%ld\n", iVal1, iVal2);
+                printf("INSERT\t%d,%d\n", iVal1, iVal2);
                 if (SP + iVal2 > stackAfter)err("out of stack");
                 memmove(SP - iVal1 + iVal2, SP - iVal1, iVal1); //make room
                 memmove(SP - iVal1, SP + iVal2, iVal2); //dup
@@ -384,7 +384,7 @@ void run(Instr *IP) {
                 break;
             case O_JF_A:
                 a1 = popa();
-                printf("JF\t%p\t(%d)\n", IP->args[0].addr, a1);
+                printf("JF\t%p\t(%p)\n", IP->args[0].addr, a1);
                 IP = a1 ? IP->next : IP->args[0].addr;
                 break;
             case O_JF_D:
@@ -399,7 +399,7 @@ void run(Instr *IP) {
                 break;
             case O_JF_I:
                 iVal1 = popi();
-                printf("JF\t%p\t(%ld)\n", IP->args[0].addr, iVal1);
+                printf("JF\t%p\t(%d)\n", IP->args[0].addr, iVal1);
                 IP = iVal1 ? IP->next : IP->args[0].addr;
                 break;
             case O_JMP:
@@ -408,7 +408,7 @@ void run(Instr *IP) {
                 break;
             case O_JT_A:
                 a1 = popa();
-                printf("JF\t%p\t(%d)\n", IP->args[0].addr, a1);
+                printf("JF\t%p\t(%p)\n", IP->args[0].addr, a1);
                 IP = a1 ? IP->args[0].addr : IP->next;
                 break;
             case O_JT_D:
@@ -423,7 +423,7 @@ void run(Instr *IP) {
                 break;
             case O_JT_I:
                 iVal1 = popi();
-                printf("JT\t%p\t(%ld)\n", IP->args[0].addr, iVal1);
+                printf("JT\t%p\t(%d)\n", IP->args[0].addr, iVal1);
                 IP = iVal1 ? IP->args[0].addr : IP->next;
                 break;
             case O_LESS_C:
@@ -472,7 +472,7 @@ void run(Instr *IP) {
             case O_LOAD:
                 iVal1 = IP->args[0].i;
                 aVal1 = popa();
-                printf("LOAD\t%ld\t(%p)\n", iVal1, aVal1);
+                printf("LOAD\t%d\t(%p)\n", iVal1, aVal1);
                 if (SP + iVal1 > stackAfter)err("out of stack");
                 memcpy(SP, aVal1, iVal1);
                 SP += iVal1;
@@ -513,7 +513,7 @@ void run(Instr *IP) {
                 break;
             case O_NEG_I:
                 iVal1 = popi();
-                printf("NEG_I %d %d", iVal1);
+                printf("NEG_I %d", iVal1);
                 pushi(-iVal1);
                 IP = IP->next;
                 break;
@@ -534,21 +534,21 @@ void run(Instr *IP) {
                 break;
             case O_NOT_I:
                 iVal1 = popi();
-                printf("NOT_I %d %d", iVal1);
+                printf("NOT_I %d", iVal1);
                 pushi(!iVal1);
                 IP = IP->next;
                 break;
             case O_NOTEQ_A:
                 a1 = popa();
                 a2 = popa();
-                printf("O_NOTEQ_A\t(%d!=%d -> %d)\n", a1, a2, a1 != a2);
+                printf("O_NOTEQ_A\t(%p!=%p -> %d)\n", a1, a2, a1 != a2);
                 pushi(a1 != a2);
                 IP = IP->next;
                 break;
             case O_NOTEQ_C:
                 cVal1 = popc();
                 cVal2 = popc();
-                printf("O_NOTEQ_C\t(%g!=%g -> %lc)\n", cVal2, cVal1, cVal2 != cVal1);
+                printf("O_NOTEQ_C\t(%c!=%c -> %lc)\n", cVal2, cVal1, cVal2 != cVal1);
                 pushi(cVal2 != cVal1);
                 IP = IP->next;
                 break;
@@ -569,7 +569,7 @@ void run(Instr *IP) {
             case O_OFFSET:
                 iVal1 = popi();
                 aVal1 = popa();
-                printf("OFFSET\t(%p+%ld -> %p)\n", aVal1, iVal1, aVal1 + iVal1);
+                printf("OFFSET\t(%p+%d -> %p)\n", aVal1, iVal1, aVal1 + iVal1);
                 pusha(aVal1 + iVal1);
                 IP = IP->next;
                 break;
@@ -584,26 +584,26 @@ void run(Instr *IP) {
                 cVal1 = popc();
                 cVal2 = popc();
                 printf("OR_C %c %c", cVal1, cVal2);
-                pushc(cVal1 || cVal2);
+                pushi(cVal1 || cVal2);
                 IP = IP->next;
                 break;
             case O_OR_D:
                 dVal1 = popd();
                 dVal2 = popd();
                 printf("OR_D %lf %lf", dVal1, dVal2);
-                pushd(dVal1 || dVal2);
+                pushi(dVal1 || dVal2);
                 IP = IP->next;
                 break;
             case O_OR_A:
                 a1 = popa();
                 a2 = popa();
-                printf("OR_A %lf %lf", a1, a2);
-                pusha(a1 || a2);
+                printf("OR_A %p %p", a1, a2);
+                pushi(a1 || a2);
                 IP = IP->next;
                 break;
             case O_PUSHFPADDR:
                 iVal1 = IP->args[0].i;
-                printf("PUSHFPADDR\t%ld\t(%p)\n", iVal1, FP + iVal1);
+                printf("PUSHFPADDR\t%d\t(%p)\n", iVal1, FP + iVal1);
                 pusha(FP + iVal1);
                 IP = IP->next;
                 break;
@@ -634,7 +634,7 @@ void run(Instr *IP) {
             case O_RET:
                 iVal1 = IP->args[0].i; // sizeArgs
                 iVal2 = IP->args[1].i; // sizeof(retType)
-                printf("RET\t%ld,%ld\n", iVal1, iVal2);
+                printf("RET\t%d,%d\n", iVal1, iVal2);
                 oldSP = SP;
                 SP = FP;
                 FP = popa();
@@ -648,7 +648,7 @@ void run(Instr *IP) {
                 iVal1 = IP->args[0].i;
                 if (SP - (sizeof(void *) + iVal1) < stack)err("not enough stack bytes for SET");
                 aVal1 = *(void **) (SP - ((sizeof(void *) + iVal1)));
-                printf("STORE\t%ld\t(%p)\n", iVal1, aVal1);
+                printf("STORE\t%d\t(%p)\n", iVal1, aVal1);
                 memcpy(aVal1, SP - iVal1, iVal1);
                 SP -= sizeof(void *) + iVal1;
                 IP = IP->next;
