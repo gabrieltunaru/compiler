@@ -4,6 +4,7 @@
 
 #include "gc.h"
 
+Instr *instructions, *lastInstruction;
 Instr *getRVal(RetVal *rv)
 {
     if(rv->isLVal){

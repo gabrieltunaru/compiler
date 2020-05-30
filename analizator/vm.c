@@ -692,6 +692,5 @@ void mvTest() {
 
 int main() {
     sintactic();
-    mvTest();
     run(instructions);
 }

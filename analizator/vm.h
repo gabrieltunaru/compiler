@@ -56,7 +56,7 @@ typedef struct _Instr {
     struct _Instr *last, *next; // links to last, next instructions
 } Instr;
 
-Instr *instructions, *lastInstruction; // double linked list
+extern Instr *instructions, *lastInstruction; // double linked list
 
 #define GLOBAL_SIZE (32*1024)
 char globals[GLOBAL_SIZE];

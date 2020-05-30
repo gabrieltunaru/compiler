@@ -8,12 +8,11 @@
 #endif //ANALIZATOR_GC_H
 #include "vm.h"
 #include "symbols.h"
+#include "stdio.h"
 
 //
 // Created by tunarug on 30.05.2020.
 //
-
-#include "gc.h"
 
 Instr *getRVal(RetVal *rv);
 void addCastInstr(Instr *after,Type *actualType,Type *neededType);

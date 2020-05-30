@@ -1,14 +1,7 @@
-struct Pt {
-    int a,b;
-};
-
-int x() {
-    int a;
-    a=3;
-    double d;
-    d=2.0;
-    int c;
-    c=a+d;
-    char s[];
-    struct Pt y;
+int main() {
+    int x,y;
+    x=1;
+    y=2;
+    int z;
+    z=x+y;
 }
