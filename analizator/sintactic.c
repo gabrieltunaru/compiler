@@ -83,6 +83,7 @@ int typeName();
 
 int exprPrimary(RetVal *rv) {
     debug("exprPrimary");
+    Instr *i;
     Token *startTk = crtTk;
     if (consume(ID)) {
         Token *tkName = consumedTk;
@@ -99,6 +100,12 @@ int exprPrimary(RetVal *rv) {
             if (expr(&arg)) {
                 if (crtDefArg == s->args.end)tkerr(crtTk, "too many arguments in call");
                 cast(&(*crtDefArg)->type, &arg.type);
+                if((*crtDefArg)->type.nElements<0){  //only arrays are passed by addr
+                    i=getRVal(&arg);
+                }else{
+                    i=lastInstruction;
+                }
+                addCastInstr(i,&arg.type,&(*crtDefArg)->type);
                 crtDefArg++;
                 while (1) {
                     if (consume(COMMA)) {
@@ -107,6 +114,12 @@ int exprPrimary(RetVal *rv) {
                         }
                         if (crtDefArg == s->args.end)tkerr(crtTk, "too many arguments in call");
                         cast(&(*crtDefArg)->type, &arg.type);
+                        if((*crtDefArg)->type.nElements<0){
+                            i=getRVal(&arg);
+                        }else{
+                            i=lastInstruction;
+                        }
+                        addCastInstr(i,&arg.type,&(*crtDefArg)->type);
                         crtDefArg++;
                     } else {
                         break;
@@ -119,9 +132,16 @@ int exprPrimary(RetVal *rv) {
             if (crtDefArg != s->args.end)tkerr(crtTk, "too few arguments in call");
             rv->type = s->type;
             rv->isCtVal = rv->isLVal = 0;
+            i=addInstr(s->cls==CLS_FUNC?O_CALL:O_CALLEXT);
+            i->args[0].addr=s->addr;
         } else {
             if (s->cls == CLS_FUNC || s->cls == CLS_EXTFUNC)
                 tkerr(crtTk, "missing call for function %s", tkName->text);
+            if(s->depth){
+                addInstrI(O_PUSHFPADDR,s->offset);
+            }else {
+                addInstrA(O_PUSHCT_A, s->addr);
+            }
         }
         return 1;
     } else if (consume(CT_INT)) {
@@ -130,13 +150,15 @@ int exprPrimary(RetVal *rv) {
         rv->ctVal.i = tki->i;
         rv->isCtVal = 1;
         rv->isLVal = 0;
+        addInstrI(O_PUSHCT_I,tki->i);
         return 1;
     } else if (consume(CT_REAL)) {
         Token *tkr = consumedTk;
         rv->type = createType(TB_DOUBLE, -1);
         rv->ctVal.d = tkr->r;
         rv->isCtVal = 1;
-        rv->isLVal = 0;;
+        rv->isLVal = 0;
+        i=addInstr(O_PUSHCT_D);i->args[0].d=tkr->r;
         return 1;
     } else if (consume(CT_CHAR)) {
         Token *tkc = consumedTk;
@@ -144,6 +166,7 @@ int exprPrimary(RetVal *rv) {
         rv->ctVal.i = tkc->i;
         rv->isCtVal = 1;
         rv->isLVal = 0;
+        addInstrI(O_PUSHCT_C,tkc->i);
         return 1;
     } else if (consume(CT_STRING)) {
         Token *tks = consumedTk;
@@ -151,6 +174,7 @@ int exprPrimary(RetVal *rv) {
         rv->ctVal.str = tks->text;
         rv->isCtVal = 1;
         rv->isLVal = 0;
+        addInstrA(O_PUSHCT_A,tks->text);
         return 1;
     } else if (consume(LPAR)) {
         if (!expr(rv)) {
@@ -185,7 +209,7 @@ int exprPostfix(RetVal *rv) {
     return 0;
 }
 
-int exprPostfix1(RetVal *rv) {
+int exprPostfix1(RetVal *rv) { //TODO: maybe cg code shoud be before second call
     debug("exprPostfix1");
     if (consume(LBRACKET)) {
         RetVal rve;
@@ -198,8 +222,14 @@ int exprPostfix1(RetVal *rv) {
         rv->isLVal = 1;
         rv->isCtVal = 0;
         if (!consume(RBRACKET)) { crtTkErr("missing }"); }
-
         if (!exprPostfix1(rv)) { crtTkErr("invalid expression"); }
+        addCastInstr(lastInstruction, &rve.type, &typeInt);
+        getRVal(&rve);
+        if (typeBaseSize(&rv->type) != 1) {
+            addInstrI(O_PUSHCT_I, typeBaseSize(&rv->type));
+            addInstr(O_MUL_I);
+        }
+        addInstr(O_OFFSET);
     }
     if (consume(DOT)) {
         if (!consume(ID)) { crtTkErr("missing id after ."); }
@@ -212,6 +242,10 @@ int exprPostfix1(RetVal *rv) {
         rv->isLVal = 1;
         rv->isCtVal = 0;
         if (!exprPostfix1(rv)) { crtTkErr("invalid expression"); }
+        if (sMember->offset) {
+            addInstrI(O_PUSHCT_I, sMember->offset);
+            addInstr(O_OFFSET);
+        }
     }
     return 1;
 }
