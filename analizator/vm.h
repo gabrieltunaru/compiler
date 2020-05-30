@@ -76,3 +76,26 @@ int popi();
 void pushc(char c);
 
 char popc();
+Instr *addInstr(int opcode) ;
+Instr *addInstr(int opcode) {
+    Instr *i = createInstr(opcode);
+    i->next = NULL;
+    i->last = lastInstruction;
+    if (lastInstruction) {
+        lastInstruction->next = i;
+    } else {
+        instructions = i;
+    }
+    lastInstruction = i;
+    return i;
+}
+
+Instr *addInstrAfter(Instr *after, int opcode) ;
+
+Instr *addInstrA(int opcode, void *addr) ;
+
+Instr *addInstrI(int opcode, int val) ;
+
+Instr *addInstrII(int opcode, int val1, int val2) ;
+void *allocGlobal(int size) ;
+void deleteInstructionsAfter(Instr *start);

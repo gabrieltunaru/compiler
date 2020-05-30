@@ -4,11 +4,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 //#include "analizator.h"
-#include "symbols.h"
+
+#include "gc.h"
 
 Token *tokens;
 
 Token *crtTk = NULL, *consumedTk = NULL;
+int offset;
 
 void crtTkErr(const char *fmt) {
     tkerr(crtTk, fmt);
@@ -43,6 +45,12 @@ void addVar(Token *tkName, Type *t) {
         s->mem = MEM_GLOBAL;
     }
     s->type = *t;
+    if(crtStruct||crtFunc){
+        s->offset=offset;
+    }else{
+        s->addr=allocGlobal(typeFullSize(&s->type));
+    }
+    offset+=typeFullSize(&s->type);
 }
 
 int consume(int code) {
@@ -110,8 +118,7 @@ int exprPrimary(RetVal *rv) {
             if (crtDefArg != s->args.end)tkerr(crtTk, "too few arguments in call");
             rv->type = s->type;
             rv->isCtVal = rv->isLVal = 0;
-        }
-        else {
+        } else {
             if (s->cls == CLS_FUNC || s->cls == CLS_EXTFUNC)
                 tkerr(crtTk, "missing call for function %s", tkName->text);
         }
@@ -490,7 +497,7 @@ int stm() {
     if (consume(SEMICOLON)) {
         return 1;
     }
-    crtTk=startTk;
+    crtTk = startTk;
     return 0;
 }
 
@@ -517,6 +524,7 @@ int funcArg() {
 
 int declFunc() {
     debug("declFunc");
+    Symbol **ps;
     Type t;
     Token *tkName;
     Token *startTk = crtTk;
@@ -567,14 +575,17 @@ int typeName(Type *ret) {
 
 int arrayDecl(Type *ret) {
     debug("arrayDecl");
+    Instr *instrBeforeExpr;
     if (!consume(LBRACKET)) return 0;
     RetVal rv;
+    instrBeforeExpr=lastInstruction;
     if (expr(&rv)) {
         if (!rv.isCtVal)tkerr(crtTk, "the array size is not a constant");
         if (rv.type.typeBase != TB_INT)tkerr(crtTk, "the array size is not an integer");
         ret->nElements = rv.ctVal.i;
     }
     ret->nElements = 0;
+    deleteInstructionsAfter(instrBeforeExpr);
     if (!consume(RBRACKET)) crtTkErr("missing ] in type declaration");
     return 1;
 }
@@ -660,6 +671,7 @@ int declStruct() {
         crtTk = start;
         return 0;
     }
+    offset=0;
     if (findSymbol(&symbols, tkName->text))
         tkerr(tkName, "symbol redefinition: %s", tkName->text);
     crtStruct = addSymbol(&symbols, tkName->text, CLS_STRUCT);
@@ -675,11 +687,15 @@ int declStruct() {
 
 int unit() {
     debug("unit");
+    Instr *labelMain=addInstr(O_CALL);
+    addInstr(O_HALT);
     while (1) {
         if (!declStruct() && !declFunc() && !declVar()) break;
     }
+    labelMain->args[0].addr=requireSymbol(&symbols,"main")->addr;
     if (!consume(END)) crtTkErr("unexpected token");
-    return 1;
+
+return 1;
 }
 
 void sintactic() {
