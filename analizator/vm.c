@@ -86,6 +86,17 @@ Instr *addInstr(int opcode) {
     return i;
 }
 
+Instr *appendInstr(Instr *i) {
+    i->last=lastInstruction;
+    if (lastInstruction) {
+        lastInstruction->next = i;
+    } else {
+        instructions = i;
+    }
+    lastInstruction = i;
+    return i;
+}
+
 Instr *addInstrAfter(Instr *after, int opcode) {
     Instr *i = createInstr(opcode);
     insertInstrAfter(after, i);
@@ -130,7 +141,7 @@ void *allocGlobal(int size) {
 void run(Instr *IP) {
     int iVal1, iVal2;
     double dVal1, dVal2;
-    char *aVal1,aVal2;
+    char *aVal1, aVal2;
     char *a1, *a2, *a;
     char cVal1, cVal2;
     char *FP = 0, *oldSP;
@@ -658,27 +669,27 @@ void run(Instr *IP) {
     }
 }
 
-void mvTest()
-{
+void mvTest() {
     Instr *L1;
-    int *v=allocGlobal(sizeof(int));
-    addInstrA(O_PUSHCT_A,v);
-    addInstrI(O_PUSHCT_I,3);
-    addInstrI(O_STORE,sizeof(int));
-    L1=addInstrA(O_PUSHCT_A,v);
-    addInstrI(O_LOAD,sizeof(int));
-    addInstrA(O_CALLEXT,requireSymbol(&symbols,"put_i")->addr);
-    addInstrA(O_PUSHCT_A,v);
-    addInstrA(O_PUSHCT_A,v);
-    addInstrI(O_LOAD,sizeof(int));
-    addInstrI(O_PUSHCT_I,1);
+    int *v = allocGlobal(sizeof(int));
+    addInstrA(O_PUSHCT_A, v);
+    addInstrI(O_PUSHCT_I, 3);
+    addInstrI(O_STORE, sizeof(int));
+    L1 = addInstrA(O_PUSHCT_A, v);
+    addInstrI(O_LOAD, sizeof(int));
+    addInstrA(O_CALLEXT, requireSymbol(&symbols, "put_i")->addr);
+    addInstrA(O_PUSHCT_A, v);
+    addInstrA(O_PUSHCT_A, v);
+    addInstrI(O_LOAD, sizeof(int));
+    addInstrI(O_PUSHCT_I, 1);
     addInstr(O_SUB_I);
-    addInstrI(O_STORE,sizeof(int));
-    addInstrA(O_PUSHCT_A,v);
-    addInstrI(O_LOAD,sizeof(int));
-    addInstrA(O_JT_I,L1);
+    addInstrI(O_STORE, sizeof(int));
+    addInstrA(O_PUSHCT_A, v);
+    addInstrI(O_LOAD, sizeof(int));
+    addInstrA(O_JT_I, L1);
     addInstr(O_HALT);
 }
+
 int main() {
     sintactic();
     mvTest();

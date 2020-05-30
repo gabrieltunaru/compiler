@@ -10,7 +10,8 @@
 Token *tokens;
 
 Token *crtTk = NULL, *consumedTk = NULL;
-int offset;
+int offset, sizeArgs;
+Instr *crtLoopEnd;
 
 void crtTkErr(const char *fmt) {
     tkerr(crtTk, fmt);
@@ -45,12 +46,12 @@ void addVar(Token *tkName, Type *t) {
         s->mem = MEM_GLOBAL;
     }
     s->type = *t;
-    if(crtStruct||crtFunc){
-        s->offset=offset;
-    }else{
-        s->addr=allocGlobal(typeFullSize(&s->type));
+    if (crtStruct || crtFunc) {
+        s->offset = offset;
+    } else {
+        s->addr = allocGlobal(typeFullSize(&s->type));
     }
-    offset+=typeFullSize(&s->type);
+    offset += typeFullSize(&s->type);
 }
 
 int consume(int code) {
@@ -396,6 +397,7 @@ int exprOr(RetVal *rv) {
 
 int exprAssign(RetVal *rv) {
     debug("exprAssign");
+    Instr *i,*oldLastInstr=lastInstruction;
     Token *startTk = crtTk;
     if (exprUnary(rv)) {
         if (consume(ASSIGN)) {
@@ -405,6 +407,13 @@ int exprAssign(RetVal *rv) {
                 if (rv->type.nElements > -1 || rve.type.nElements > -1)
                     tkerr(crtTk, "the arrays cannot be assigned");
                 cast(&rv->type, &rve.type);
+                i=getRVal(&rve);
+                addCastInstr(i,&rve.type,&rv->type);
+                //TODO: duplicate the value on top before the dst addr?
+                addInstrII(O_INSERT,
+                           sizeof(void*)+typeArgSize(&rv->type),
+                           typeArgSize(&rv->type));
+                addInstrI(O_STORE,typeArgSize(&rv->type));
                 rv->isCtVal = rv->isLVal = 0;
                 return 1;
             } else {
@@ -413,6 +422,7 @@ int exprAssign(RetVal *rv) {
         }
         crtTk = startTk;
     }
+    deleteInstructionsAfter(oldLastInstr);
     if (exprOr(rv)) {
         return 1;
     }
@@ -441,6 +451,7 @@ int stmCompound() {
 
 int stm() {
     debug("stm");
+    Instr *i, *i1, *i2, *i3, *i4, *is, *ib3, *ibs;
     RetVal rv;
     Token *startTk = crtTk;
     if (stmCompound()) { return 1; }
@@ -450,38 +461,82 @@ int stm() {
         if (rv.type.typeBase == TB_STRUCT)
             tkerr(crtTk, "a structure cannot be logically tested");
         if (!consume(RPAR)) { crtTkErr("missing ) in if declaration"); }
+        i1 = createCondJmp(&rv);
         if (!stm()) { crtTkErr("invalid if body"); }
         if (consume(ELSE)) {
+            i2 = addInstr(O_JMP);
             if (!stm()) { crtTkErr("invalid else body"); }
+            i1->args[0].addr = i2->next;
+            i1 = i2;
         }
+        i1->args[0].addr = addInstr(O_NOP);
         return 1;
     }
     if (consume(WHILE)) {
+        Instr *oldLoopEnd = crtLoopEnd;
+        crtLoopEnd = createInstr(O_NOP);
+        i1 = lastInstruction;
         if (!consume(LPAR)) { crtTkErr("missing ( after while declaration"); }
         if (!expr(&rv)) { crtTkErr("invalid boolean condition after ("); }
         if (rv.type.typeBase == TB_STRUCT)
             tkerr(crtTk, "a structure cannot be logically tested");
         if (!consume(RPAR)) { crtTkErr("missing ) in while declaration"); }
+        i2 = createCondJmp(&rv);
         if (!stm()) { crtTkErr("invalid while body"); }
+        addInstrA(O_JMP, i1->next);
+        appendInstr(crtLoopEnd);
+        i2->args[0].addr = crtLoopEnd;
+        crtLoopEnd = oldLoopEnd;
         return 1;
     }
     if (consume(FOR)) {
         RetVal rv1, rv2, rv3;
+        Instr *oldLoopEnd = crtLoopEnd;
+        crtLoopEnd = createInstr(O_NOP);
         if (!consume(LPAR)) { crtTkErr("missing ( after for declaration"); }
-        expr(&rv1);
+        if (expr(&rv1)) {
+            if (typeArgSize(&rv1.type))
+                addInstrI(O_DROP, typeArgSize(&rv1.type));
+        }
+
         if (!consume(SEMICOLON)) { crtTkErr("missing ; in for declaration after init"); }
+        i2 = lastInstruction; /* i2 is before rv2 */
         if (expr(&rv2)) {
             if (rv2.type.typeBase == TB_STRUCT)
                 tkerr(crtTk, "a structure cannot be logically tested");
+            i4 = createCondJmp(&rv2);
+        } else {
+            i4 = NULL;
         }
         if (!consume(SEMICOLON)) { crtTkErr("missing ; in for declaration after condition"); }
-        expr(&rv3);
+        ib3 = lastInstruction;
+        if (expr(&rv3)) {
+            if (typeArgSize(&rv3.type))
+                addInstrI(O_DROP, typeArgSize(&rv3.type));
+        }
         if (!consume(RPAR)) { crtTkErr("missing ) in for declaration"); }
+        ibs = lastInstruction;
         if (!stm()) { crtTkErr("invalid for body"); }
+        if (ib3 != ibs) {
+            i3 = ib3->next;
+            is = ibs->next;
+            ib3->next = is;
+            is->last = ib3;
+            lastInstruction->next = i3;
+            i3->last = lastInstruction;
+            ibs->next = NULL;
+            lastInstruction = ibs;
+        }
+        addInstrA(O_JMP, i2->next);
+        appendInstr(crtLoopEnd);
+        if (i4)i4->args[0].addr = crtLoopEnd;
+        crtLoopEnd = oldLoopEnd;
         return 1;
     }
     if (consume(BREAK)) {
         if (!consume(SEMICOLON)) { crtTkErr("missing ; after BREAK"); }
+        if (!crtLoopEnd)tkerr(crtTk, "break without for or while");
+        addInstrA(O_JMP, crtLoopEnd);
         return 1;
     }
     if (consume(RETURN)) {
@@ -489,11 +544,20 @@ int stm() {
             if (crtFunc->type.typeBase == TB_VOID)
                 tkerr(crtTk, "a void function cannot return a value");
             cast(&crtFunc->type, &rv.type);
+            i = getRVal(&rv);
+            addCastInstr(i, &rv.type, &crtFunc->type);
         }
         if (!consume(SEMICOLON)) { crtTkErr("missing ; after RETURN"); }
+        if (crtFunc->type.typeBase == TB_VOID) {
+            addInstrII(O_RET, sizeArgs, 0);
+        } else {
+            addInstrII(O_RET, sizeArgs, typeArgSize(&crtFunc->type));
+        }
         return 1;
     }
-    expr(&rv);
+    if (expr(&rv)) { //TODO: check if it really is rv and not rv1
+        if(typeArgSize(&rv.type))addInstrI(O_DROP,typeArgSize(&rv.type));
+    }
     if (consume(SEMICOLON)) {
         return 1;
     }
@@ -514,9 +578,12 @@ int funcArg() {
         Symbol *s = addSymbol(&symbols, tkName->text, CLS_VAR);
         s->mem = MEM_ARG;
         s->type = t;
+        s->offset = offset;
         s = addSymbol(&crtFunc->args, tkName->text, CLS_VAR);
         s->mem = MEM_ARG;
         s->type = t;
+        s->offset = offset;
+        offset += typeArgSize(&s->type);
         return 1;
     }
     return 0;
@@ -542,6 +609,7 @@ int declFunc() {
     }
     if (!consume(ID)) { crtTkErr("invalid function name"); }
     tkName = consumedTk;
+    sizeArgs = offset = 0;
     if (!consume(LPAR)) {
         crtTk = startTk;
         return 0;
@@ -559,8 +627,22 @@ int declFunc() {
     }
     if (!consume(RPAR)) { crtTkErr("missing ) in function signature"); }
     crtDepth--;
+    crtFunc->addr = addInstr(O_ENTER);
+    sizeArgs = offset;
+    //update args offsets for correct FP indexing
+    for (ps = symbols.begin; ps != symbols.end; ps++) {
+        if ((*ps)->mem == MEM_ARG) {
+            //2*sizeof(void*) == sizeof(retAddr)+sizeof(FP)
+            (*ps)->offset -= sizeArgs + 2 * sizeof(void *);
+        }
+    }
+    offset = 0;
     if (!stmCompound()) crtTkErr("invalid function body");
     deleteSymbolsAfter(&symbols, crtFunc);
+    ((Instr *) crtFunc->addr)->args[0].i = offset;  // setup the ENTER argument
+    if (crtFunc->type.typeBase == TB_VOID) {
+        addInstrII(O_RET, sizeArgs, 0);
+    }
     crtFunc = NULL;
     return 1;
 }
@@ -578,7 +660,7 @@ int arrayDecl(Type *ret) {
     Instr *instrBeforeExpr;
     if (!consume(LBRACKET)) return 0;
     RetVal rv;
-    instrBeforeExpr=lastInstruction;
+    instrBeforeExpr = lastInstruction;
     if (expr(&rv)) {
         if (!rv.isCtVal)tkerr(crtTk, "the array size is not a constant");
         if (rv.type.typeBase != TB_INT)tkerr(crtTk, "the array size is not an integer");
@@ -671,7 +753,7 @@ int declStruct() {
         crtTk = start;
         return 0;
     }
-    offset=0;
+    offset = 0;
     if (findSymbol(&symbols, tkName->text))
         tkerr(tkName, "symbol redefinition: %s", tkName->text);
     crtStruct = addSymbol(&symbols, tkName->text, CLS_STRUCT);
@@ -687,15 +769,15 @@ int declStruct() {
 
 int unit() {
     debug("unit");
-    Instr *labelMain=addInstr(O_CALL);
+    Instr *labelMain = addInstr(O_CALL);
     addInstr(O_HALT);
     while (1) {
         if (!declStruct() && !declFunc() && !declVar()) break;
     }
-    labelMain->args[0].addr=requireSymbol(&symbols,"main")->addr;
+    labelMain->args[0].addr = requireSymbol(&symbols, "main")->addr;
     if (!consume(END)) crtTkErr("unexpected token");
 
-return 1;
+    return 1;
 }
 
 void sintactic() {
