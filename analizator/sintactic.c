@@ -198,6 +198,7 @@ int exprPostfix1(RetVal *rv) {
         rv->isLVal = 1;
         rv->isCtVal = 0;
         if (!consume(RBRACKET)) { crtTkErr("missing }"); }
+
         if (!exprPostfix1(rv)) { crtTkErr("invalid expression"); }
     }
     if (consume(DOT)) {
@@ -224,8 +225,36 @@ int exprUnary(RetVal *rv) {
             if (rv->type.nElements >= 0)tkerr(crtTk, "unary '-' cannot be applied to an array");
             if (rv->type.typeBase == TB_STRUCT)
                 tkerr(crtTk, "unary '-' cannot be applied to a struct");
+            getRVal(rv);
+            switch (rv->type.typeBase) {
+                case TB_CHAR:
+                    addInstr(O_NEG_C);
+                    break;
+                case TB_INT:
+                    addInstr(O_NEG_I);
+                    break;
+                case TB_DOUBLE:
+                    addInstr(O_NEG_D);
+                    break;
+            }
         } else {  // NOT
             if (rv->type.typeBase == TB_STRUCT)tkerr(crtTk, "'!' cannot be applied to a struct");
+            if (rv->type.nElements < 0) {
+                getRVal(rv);
+                switch (rv->type.typeBase) {
+                    case TB_CHAR:
+                        addInstr(O_NOT_C);
+                        break;
+                    case TB_INT:
+                        addInstr(O_NOT_I);
+                        break;
+                    case TB_DOUBLE:
+                        addInstr(O_NOT_D);
+                        break;
+                }
+            } else {
+                addInstr(O_NOT_A);
+            }
             rv->type = createType(TB_INT, -1);
         }
         rv->isCtVal = rv->isLVal = 0;
@@ -235,8 +264,10 @@ int exprUnary(RetVal *rv) {
 
 int exprCast(RetVal *rv) {
     debug("exprCast");
+    Instr *oldLastInstr = lastInstruction;
     if (!consume(LPAR)) {
         if (exprUnary(rv)) {
+            deleteInstructionsAfter(oldLastInstr); //TODO: should this be here or a few lines below?
             return 1;
         } else {
             return 0;
@@ -248,6 +279,40 @@ int exprCast(RetVal *rv) {
     RetVal rve;
     if (!exprCast(&rve)) { crtTkErr("invalid expression"); }
     cast(&t, &rve.type);
+    if (rv->type.nElements < 0 && rv->type.typeBase != TB_STRUCT) {
+        switch (rve.type.typeBase) {
+            case TB_CHAR:
+                switch (t.typeBase) {
+                    case TB_INT:
+                        addInstr(O_CAST_C_I);
+                        break;
+                    case TB_DOUBLE:
+                        addInstr(O_CAST_C_D);
+                        break;
+                }
+                break;
+            case TB_DOUBLE:
+                switch (t.typeBase) {
+                    case TB_CHAR:
+                        addInstr(O_CAST_D_C);
+                        break;
+                    case TB_INT:
+                        addInstr(O_CAST_D_I);
+                        break;
+                }
+                break;
+            case TB_INT:
+                switch (t.typeBase) {
+                    case TB_CHAR:
+                        addInstr(O_CAST_I_C);
+                        break;
+                    case TB_DOUBLE:
+                        addInstr(O_CAST_I_D);
+                        break;
+                }
+                break;
+        }
+    }
     rv->type = t;
     rv->isCtVal = rv->isLVal = 0;
     return 1;
@@ -262,14 +327,49 @@ int exprCast(RetVal *rv) {
 
 int exprMul1(RetVal *rv) {
     debug("exprMul1");
+    Instr *i1, *i2;
+    Type t1, t2;
+    Token *tkop;
     RetVal rve;
     if (consume(MUL) || consume(DIV)) {
+        tkop = consumedTk;
+        i1 = getRVal(rv);
+        t1 = rv->type;
         if (!exprCast(&rve)) { crtTkErr("invalid expr after * or /"); }
         if (rv->type.nElements > -1 || rve.type.nElements > -1)
             tkerr(crtTk, "an array cannot be multiplied or divided");
         if (rv->type.typeBase == TB_STRUCT || rve.type.typeBase == TB_STRUCT)
             tkerr(crtTk, "a structure cannot be multiplied or divided");
         rv->type = getArithType(&rv->type, &rve.type);
+        i2 = getRVal(&rve);
+        t2 = rve.type;
+        addCastInstr(i1, &t1, &rv->type);
+        addCastInstr(i2, &t2, &rv->type);
+        if (tkop->code == MUL) {
+            switch (rv->type.typeBase) {
+                case TB_INT:
+                    addInstr(O_MUL_I);
+                    break;
+                case TB_DOUBLE:
+                    addInstr(O_MUL_D);
+                    break;
+                case TB_CHAR:
+                    addInstr(O_MUL_C);
+                    break;
+            }
+        } else {
+            switch (rv->type.typeBase) {
+                case TB_INT:
+                    addInstr(O_DIV_I);
+                    break;
+                case TB_DOUBLE:
+                    addInstr(O_DIV_D);
+                    break;
+                case TB_CHAR:
+                    addInstr(O_DIV_C);
+                    break;
+            }
+        }
         rv->isCtVal = rv->isLVal = 0;
         exprMul1(rv);
     }
@@ -291,14 +391,49 @@ int exprMul(RetVal *rv) {
 
 int exprAdd1(RetVal *rv) {
     debug("exprAdd1");
+    Instr *i1, *i2;
+    Type t1, t2;
+    Token *tkop;
     RetVal rve;
     if (consume(ADD) || consume(SUB)) {
+        i1 = getRVal(rv);
+        t1 = rv->type;
+        tkop = consumedTk;
         if (!exprCast(&rve)) { crtTkErr("invalid expr after +-"); }
         if (rv->type.nElements > -1 || rve.type.nElements > -1)
             tkerr(crtTk, "an array cannot be added or subtracted");
         if (rv->type.typeBase == TB_STRUCT || rve.type.typeBase == TB_STRUCT)
             tkerr(crtTk, "a structure cannot be added or subtracted");
         rv->type = getArithType(&rv->type, &rve.type);
+        i2 = getRVal(&rve);
+        t2 = rve.type;
+        addCastInstr(i1, &t1, &rv->type);
+        addCastInstr(i2, &t2, &rv->type);
+        if (tkop->code == ADD) {
+            switch (rv->type.typeBase) {
+                case TB_INT:
+                    addInstr(O_ADD_I);
+                    break;
+                case TB_DOUBLE:
+                    addInstr(O_ADD_D);
+                    break;
+                case TB_CHAR:
+                    addInstr(O_ADD_C);
+                    break;
+            }
+        } else {
+            switch (rv->type.typeBase) {
+                case TB_INT:
+                    addInstr(O_SUB_I);
+                    break;
+                case TB_DOUBLE:
+                    addInstr(O_SUB_D);
+                    break;
+                case TB_CHAR:
+                    addInstr(O_SUB_C);
+                    break;
+            }
+        }
         rv->isCtVal = rv->isLVal = 0;
         exprAdd1(rv);
     }
@@ -313,13 +448,78 @@ int exprAdd(RetVal *rv) {
 
 int exprRel1(RetVal *rv) {
     debug("exprRel1");
+    Instr *i1, *i2;
+    Type t, t1, t2;
+    Token *tkop;
     RetVal rve;
     if (consume(LESS) || consume(LESSEQ) || consume(GREATER) || consume(GREATEREQ)) {
+        tkop = consumedTk;
+        i1 = getRVal(rv);
+        t1 = rv->type;
         if (!exprAdd(&rve)) { crtTkErr("invalid expr after comparator"); }
         if (rv->type.nElements > -1 || rve.type.nElements > -1)
             tkerr(crtTk, "an array cannot be compared");
         if (rv->type.typeBase == TB_STRUCT || rve.type.typeBase == TB_STRUCT)
             tkerr(crtTk, "a structure cannot be compared");
+        i2 = getRVal(&rve);
+        t2 = rve.type;
+        t = getArithType(&t1, &t2);
+        addCastInstr(i1, &t1, &t);
+        addCastInstr(i2, &t2, &t);
+        switch (tkop->code) {
+            case LESS:
+                switch (t.typeBase) {
+                    case TB_INT:
+                        addInstr(O_LESS_I);
+                        break;
+                    case TB_DOUBLE:
+                        addInstr(O_LESS_D);
+                        break;
+                    case TB_CHAR:
+                        addInstr(O_LESS_C);
+                        break;
+                }
+                break;
+            case LESSEQ:
+                switch (t.typeBase) {
+                    case TB_INT:
+                        addInstr(O_LESSEQ_I);
+                        break;
+                    case TB_DOUBLE:
+                        addInstr(O_LESSEQ_D);
+                        break;
+                    case TB_CHAR:
+                        addInstr(O_LESSEQ_C);
+                        break;
+                }
+                break;
+            case GREATER:
+                switch (t.typeBase) {
+                    case TB_INT:
+                        addInstr(O_GREATER_I);
+                        break;
+                    case TB_DOUBLE:
+                        addInstr(O_GREATER_D);
+                        break;
+                    case TB_CHAR:
+                        addInstr(O_GREATER_C);
+                        break;
+                }
+                break;
+            case GREATEREQ:
+                switch (t.typeBase) {
+                    case TB_INT:
+                        addInstr(O_GREATEREQ_I);
+                        break;
+                    case TB_DOUBLE:
+                        addInstr(O_GREATEREQ_D);
+                        break;
+                    case TB_CHAR:
+                        addInstr(O_GREATEREQ_C);
+                        break;
+                }
+                break;
+        }
         rv->type = createType(TB_INT, -1);
         rv->isCtVal = rv->isLVal = 0;
         exprRel1(rv);
@@ -336,11 +536,51 @@ int exprRel(RetVal *rv) {
 
 int exprEq1(RetVal *rv) {
     debug("exprEq1");
+    Instr *i1, *i2;
+    Type t, t1, t2;
+    Token *tkop;
     RetVal rve;
     if (consume(EQUAL) || consume(NOTEQ)) {
+        tkop = consumedTk;
+        i1 = rv->type.nElements < 0 ? getRVal(rv) : lastInstruction;
+        t1 = rv->type;
         if (!exprRel(&rve)) { crtTkErr("invalid expr after =="); }
         if (rv->type.typeBase == TB_STRUCT || rve.type.typeBase == TB_STRUCT)
             tkerr(crtTk, "a structure cannot be compared");
+        if (rv->type.nElements >= 0) {      // vectors
+            addInstr(tkop->code == EQUAL ? O_EQ_A : O_NOTEQ_A);
+        } else {  // non-vectors
+            i2 = getRVal(&rve);
+            t2 = rve.type;
+            t = getArithType(&t1, &t2);
+            addCastInstr(i1, &t1, &t);
+            addCastInstr(i2, &t2, &t);
+            if (tkop->code == EQUAL) {
+                switch (t.typeBase) {
+                    case TB_INT:
+                        addInstr(O_EQ_I);
+                        break;
+                    case TB_DOUBLE:
+                        addInstr(O_EQ_D);
+                        break;
+                    case TB_CHAR:
+                        addInstr(O_EQ_C);
+                        break;
+                }
+            } else {
+                switch (t.typeBase) {
+                    case TB_INT:
+                        addInstr(O_NOTEQ_I);
+                        break;
+                    case TB_DOUBLE:
+                        addInstr(O_NOTEQ_D);
+                        break;
+                    case TB_CHAR:
+                        addInstr(O_NOTEQ_C);
+                        break;
+                }
+            }
+        }
         rv->type = createType(TB_INT, -1);
         rv->isCtVal = rv->isLVal = 0;
         exprEq1(rv);
@@ -357,11 +597,35 @@ int exprEq(RetVal *rv) {
 
 int exprAnd1(RetVal *rv) {
     debug("exprAnd1");
+    Instr *i1, *i2;
+    Type t, t1, t2;
     RetVal rve;
     if (consume(AND)) {
+        i1 = rv->type.nElements < 0 ? getRVal(rv) : lastInstruction;
+        t1 = rv->type;
         if (!exprEq(&rve)) { crtTkErr("invalid expr after &&"); }
         if (rv->type.typeBase == TB_STRUCT || rve.type.typeBase == TB_STRUCT)
             tkerr(crtTk, "a structure cannot be logically tested");
+        if (rv->type.nElements >= 0) {      // vectors
+            addInstr(O_AND_A);
+        } else {  // non-vectors
+            i2 = getRVal(&rve);
+            t2 = rve.type;
+            t = getArithType(&t1, &t2);
+            addCastInstr(i1, &t1, &t);
+            addCastInstr(i2, &t2, &t);
+            switch (t.typeBase) {
+                case TB_INT:
+                    addInstr(O_AND_I);
+                    break;
+                case TB_DOUBLE:
+                    addInstr(O_AND_D);
+                    break;
+                case TB_CHAR:
+                    addInstr(O_AND_C);
+                    break;
+            }
+        }
         rv->type = createType(TB_INT, -1);
         rv->isCtVal = rv->isLVal = 0;
         exprAnd1(rv);
@@ -377,11 +641,35 @@ int exprAnd(RetVal *rv) {
 
 int exprOr1(RetVal *rv) {
     debug("exprOr1");
+    Instr *i1, *i2;
+    Type t, t1, t2;
     RetVal rve;
     if (consume(OR)) {
+        i1 = rv->type.nElements < 0 ? getRVal(rv) : lastInstruction;
+        t1 = rv->type;
         if (!exprAnd(&rve)) { crtTkErr("invalid expr after ||"); }
         if (rv->type.typeBase == TB_STRUCT || rve.type.typeBase == TB_STRUCT)
             tkerr(crtTk, "a structure cannot be logically tested");
+        if (rv->type.nElements >= 0) {      // vectors
+            addInstr(O_OR_A);
+        } else {  // non-vectors
+            i2 = getRVal(&rve);
+            t2 = rve.type;
+            t = getArithType(&t1, &t2);
+            addCastInstr(i1, &t1, &t);
+            addCastInstr(i2, &t2, &t);
+            switch (t.typeBase) {
+                case TB_INT:
+                    addInstr(O_OR_I);
+                    break;
+                case TB_DOUBLE:
+                    addInstr(O_OR_D);
+                    break;
+                case TB_CHAR:
+                    addInstr(O_OR_C);
+                    break;
+            }
+        }
         rv->type = createType(TB_INT, -1);
         rv->isCtVal = rv->isLVal = 0;
         exprOr1(rv);
@@ -397,7 +685,7 @@ int exprOr(RetVal *rv) {
 
 int exprAssign(RetVal *rv) {
     debug("exprAssign");
-    Instr *i,*oldLastInstr=lastInstruction;
+    Instr *i, *oldLastInstr = lastInstruction;
     Token *startTk = crtTk;
     if (exprUnary(rv)) {
         if (consume(ASSIGN)) {
@@ -407,13 +695,13 @@ int exprAssign(RetVal *rv) {
                 if (rv->type.nElements > -1 || rve.type.nElements > -1)
                     tkerr(crtTk, "the arrays cannot be assigned");
                 cast(&rv->type, &rve.type);
-                i=getRVal(&rve);
-                addCastInstr(i,&rve.type,&rv->type);
+                i = getRVal(&rve);
+                addCastInstr(i, &rve.type, &rv->type);
                 //TODO: duplicate the value on top before the dst addr?
                 addInstrII(O_INSERT,
-                           sizeof(void*)+typeArgSize(&rv->type),
+                           sizeof(void *) + typeArgSize(&rv->type),
                            typeArgSize(&rv->type));
-                addInstrI(O_STORE,typeArgSize(&rv->type));
+                addInstrI(O_STORE, typeArgSize(&rv->type));
                 rv->isCtVal = rv->isLVal = 0;
                 return 1;
             } else {
@@ -556,7 +844,7 @@ int stm() {
         return 1;
     }
     if (expr(&rv)) { //TODO: check if it really is rv and not rv1
-        if(typeArgSize(&rv.type))addInstrI(O_DROP,typeArgSize(&rv.type));
+        if (typeArgSize(&rv.type))addInstrI(O_DROP, typeArgSize(&rv.type));
     }
     if (consume(SEMICOLON)) {
         return 1;
