@@ -85,6 +85,7 @@ int exprPrimary(RetVal *rv) {
     debug("exprPrimary");
     Instr *i;
     Token *startTk = crtTk;
+    Instr *startLastInstr = lastInstruction;
     if (consume(ID)) {
         Token *tkName = consumedTk;
         Symbol *s = findSymbol(&symbols, tkName->text);
@@ -185,6 +186,7 @@ int exprPrimary(RetVal *rv) {
         return 1;
     }
     crtTk = startTk;
+    deleteInstructionsAfter(startLastInstr);
     return 0;
 
 }
@@ -203,10 +205,12 @@ int exprPrimary(RetVal *rv) {
 int exprPostfix(RetVal *rv) {
     debug("exprPostfix");
     Token *startTk = crtTk;
+    Instr *startLastInstr = lastInstruction;
     if (exprPrimary(rv)) {
         if (exprPostfix1(rv)) { return 1; }
     }
     crtTk = startTk;
+    deleteInstructionsAfter(startLastInstr);
     return 0;
 }
 
@@ -722,6 +726,7 @@ int exprAssign(RetVal *rv) {
     debug("exprAssign");
     Instr *i, *oldLastInstr = lastInstruction;
     Token *startTk = crtTk;
+    Instr *startLastInstr = lastInstruction;
     if (exprUnary(rv)) {
         if (consume(ASSIGN)) {
             RetVal rve;
@@ -744,6 +749,7 @@ int exprAssign(RetVal *rv) {
             }
         }
         crtTk = startTk;
+        deleteInstructionsAfter(startLastInstr);
     }
     deleteInstructionsAfter(oldLastInstr);
     if (exprOr(rv)) {
@@ -761,6 +767,7 @@ int stmCompound() {
     debug("stmCompound");
     Symbol *start = symbols.end[-1];
     Token *startTk = crtTk;
+    Instr *startLastInstr = lastInstruction;
     if (!consume(LACC)) { return 0; }
     crtDepth++;
     while (1) {
@@ -777,6 +784,7 @@ int stm() {
     Instr *i, *i1, *i2, *i3, *i4, *is, *ib3, *ibs;
     RetVal rv;
     Token *startTk = crtTk;
+    Instr *startLastInstr = lastInstruction;
     if (stmCompound()) { return 1; }
     if (consume(IF)) {
         if (!consume(LPAR)) { crtTkErr("missing ( after if declaration"); }
@@ -885,6 +893,7 @@ int stm() {
         return 1;
     }
     crtTk = startTk;
+    deleteInstructionsAfter(startLastInstr);
     return 0;
 }
 
@@ -918,6 +927,7 @@ int declFunc() {
     Type t;
     Token *tkName;
     Token *startTk = crtTk;
+    Instr *startLastInstr = lastInstruction;
     if (!consume(VOID)) {
         if (!typeBase(&t)) { return 0; }
         else {
@@ -935,6 +945,7 @@ int declFunc() {
     sizeArgs = offset = 0;
     if (!consume(LPAR)) {
         crtTk = startTk;
+        deleteInstructionsAfter(startLastInstr);
         return 0;
     }
     if (findSymbol(&symbols, tkName->text))
@@ -1031,6 +1042,7 @@ int declVar() {
     Type t;
     Token *tkName;
     Token *startTk = crtTk;
+    Instr *startLastInstr = lastInstruction;
     int isDV;
     if (typeBase(&t)) {
         if (consume(ID)) {
@@ -1062,6 +1074,7 @@ int declVar() {
         }
     }
     crtTk = startTk;
+    deleteInstructionsAfter(startLastInstr);
     return 0;
 }
 
