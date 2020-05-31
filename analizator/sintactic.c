@@ -724,7 +724,7 @@ int exprOr(RetVal *rv) {
 
 int exprAssign(RetVal *rv) {
     debug("exprAssign");
-    Instr *i, *oldLastInstr = lastInstruction;
+    Instr *i;
     Token *startTk = crtTk;
     Instr *startLastInstr = lastInstruction;
     if (exprUnary(rv)) {
@@ -751,7 +751,6 @@ int exprAssign(RetVal *rv) {
         crtTk = startTk;
         deleteInstructionsAfter(startLastInstr);
     }
-    deleteInstructionsAfter(oldLastInstr);
     if (exprOr(rv)) {
         return 1;
     }
@@ -999,9 +998,9 @@ int arrayDecl(Type *ret) {
         if (!rv.isCtVal)tkerr(crtTk, "the array size is not a constant");
         if (rv.type.typeBase != TB_INT)tkerr(crtTk, "the array size is not an integer");
         ret->nElements = rv.ctVal.i;
+        deleteInstructionsAfter(instrBeforeExpr);
     }
     ret->nElements = 0;
-    deleteInstructionsAfter(instrBeforeExpr);
     if (!consume(RBRACKET)) crtTkErr("missing ] in type declaration");
     return 1;
 }
@@ -1081,12 +1080,14 @@ int declVar() {
 int declStruct() {
     Token *tkName;
     Token *start = crtTk;
+    Instr *startLastInstr = lastInstruction;
     debug("declStruct");
     if (!consume(STRUCT)) { return 0; }
     if (!consume(ID)) { tkerr(crtTk, "missing name after struct declaration"); }
     tkName = consumedTk;
     if (!consume(LACC)) {
         crtTk = start;
+        deleteInstructionsAfter(startLastInstr);
         return 0;
     }
     offset = 0;

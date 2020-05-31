@@ -70,7 +70,7 @@ int typeBaseSize(Type *type)
     int size=0;
     Symbol **is;
     switch(type->typeBase){
-        case TB_INT:size=sizeof(long int);break;
+        case TB_INT:size=sizeof(int);break;
         case TB_DOUBLE:size=sizeof(double);break;
         case TB_CHAR:size=sizeof(char);break;
         case TB_STRUCT:

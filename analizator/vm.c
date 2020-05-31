@@ -10,6 +10,7 @@
 #include <string.h>
 #include "sintactic.h"
 
+
 void pushd(double d) {
     if (SP + sizeof(double) > stackAfter)err("out of stack");
     *(double *) SP = d;
@@ -87,7 +88,8 @@ Instr *addInstr(int opcode) {
 }
 
 Instr *appendInstr(Instr *i) {
-    i->last=lastInstruction;
+    i->last = lastInstruction;
+    i->next = lastInstruction->next;
     if (lastInstruction) {
         lastInstruction->next = i;
     } else {
@@ -123,12 +125,14 @@ Instr *addInstrII(int opcode, int val1, int val2) {
 }
 
 void deleteInstructionsAfter(Instr *start) {
-    while (start != lastInstruction) {
-        Instr *end = lastInstruction;
-        lastInstruction = lastInstruction->last;
-        free(end);
-        end = NULL;
+    Instr *i = start->next, *i2;
+    while (i != NULL) {
+        i2 = i;
+        i = i->next;
+        free(i2);
     }
+    start->next = NULL;
+    lastInstruction = start;
 }
 
 void *allocGlobal(int size) {
@@ -671,6 +675,7 @@ void run(Instr *IP) {
 
 void mvTest() {
     Instr *L1;
+    lastInstruction = NULL;
     int *v = allocGlobal(sizeof(int));
     addInstrA(O_PUSHCT_A, v);
     addInstrI(O_PUSHCT_I, 3);
@@ -690,7 +695,252 @@ void mvTest() {
     addInstr(O_HALT);
 }
 
+void printInstructions(Instr *IP) {
+    while(1) {
+        switch (IP->opcode) {
+            case O_ADD_C:
+                printf("O_ADD_C\n");
+                break;
+            case O_ADD_D:
+                printf("O_ADD_D\n");
+                break;
+            case O_ADD_I:
+                printf("O_ADD_I\n");
+                break;
+            case O_AND_A:
+                printf("O_AND_A\n");
+                break;
+            case O_AND_C:
+                printf("O_AND_C\n");
+                break;
+            case O_AND_D:
+                printf("O_AND_D\n");
+                break;
+            case O_AND_I:
+                printf("O_AND_I\n");
+                break;
+            case O_CALL:
+                printf("O_CALL\n");
+                break;
+            case O_CALLEXT:
+                printf("O_CALLEXT\n");
+                break;
+            case O_CAST_C_D:
+                printf("O_CAST_C_D\n");
+                break;
+            case O_CAST_C_I:
+                printf("O_CAST_C_I\n");
+                break;
+            case O_CAST_D_C:
+                printf("O_CAST_D_C\n");
+                break;
+            case O_CAST_D_I:
+                printf("O_CAST_D_I\n");
+                break;
+            case O_CAST_I_C:
+                printf("O_CAST_I_C\n");
+                break;
+            case O_CAST_I_D:
+                printf("O_CAST_I_D\n");
+                break;
+            case O_DIV_C:
+                printf("O_DIV_C\n");
+                break;
+            case O_DIV_D:
+                printf("O_DIV_D\n");
+                break;
+            case O_DIV_I:
+                printf("O_DIV_I\n");
+                break;
+            case O_DROP:
+                printf("O_DROP\n");
+                break;
+            case O_ENTER:
+                printf("O_ENTER\n");
+                break;
+            case O_EQ_A:
+                printf("O_EQ_A\n");
+                break;
+            case O_EQ_C:
+                printf("O_EQ_C\n");
+                break;
+            case O_EQ_D:
+                printf("O_EQ_D\n");
+                break;
+            case O_EQ_I:
+                printf("O_EQ_I\n");
+                break;
+            case O_GREATER_C:
+                printf("O_GREATER_C\n");
+                break;
+            case O_GREATER_D:
+                printf("O_GREATER_D\n");
+                break;
+            case O_GREATER_I:
+                printf("O_GREATER_I\n");
+                break;
+            case O_GREATEREQ_C:
+                printf("O_GREATEREQ_C\n");
+                break;
+            case O_GREATEREQ_D:
+                printf("O_GREATEREQ_D\n");
+                break;
+            case O_GREATEREQ_I:
+                printf("O_GREATEREQ_I\n");
+                break;
+            case O_HALT:
+                printf("O_HALT\n");
+                return;
+            case O_INSERT:
+                printf("O_INSERT\n");
+                break;
+            case O_JF_A:
+                printf("O_JF_A\n");
+                break;
+            case O_JF_C:
+                printf("O_JF_C\n");
+                break;
+            case O_JF_D:
+                printf("O_JF_D\n");
+                break;
+            case O_JF_I:
+                printf("O_JF_I\n");
+                break;
+            case O_JMP:
+                printf("O_JMP\n");
+                break;
+            case O_JT_A:
+                printf("O_JT_A\n");
+                break;
+            case O_JT_C:
+                printf("O_JT_C\n");
+                break;
+            case O_JT_D:
+                printf("O_JT_D\n");
+                break;
+            case O_JT_I:
+                printf("O_JT_I\n");
+                break;
+            case O_LESS_C:
+                printf("O_LESS_C\n");
+                break;
+            case O_LESS_D:
+                printf("O_LESS_D\n");
+                break;
+            case O_LESS_I:
+                printf("O_LESS_I\n");
+                break;
+            case O_LESSEQ_C:
+                printf("O_LESSEQ_C\n");
+                break;
+            case O_LESSEQ_D:
+                printf("O_LESSEQ_D\n");
+                break;
+            case O_LESSEQ_I:
+                printf("O_LESSEQ_I\n");
+                break;
+            case O_LOAD:
+                printf("O_LOAD\n");
+                break;
+            case O_MUL_C:
+                printf("O_MUL_C\n");
+                break;
+            case O_MUL_D:
+                printf("O_MUL_D\n");
+                break;
+            case O_MUL_I:
+                printf("O_MUL_I\n");
+                break;
+            case O_NEG_C:
+                printf("O_NEG_C\n");
+                break;
+            case O_NEG_D:
+                printf("O_NEG_D\n");
+                break;
+            case O_NEG_I:
+                printf("O_NEG_I\n");
+                break;
+            case O_NOP:
+                printf("O_NOP\n");
+                break;
+            case O_NOT_A:
+                printf("O_NOT_A\n");
+                break;
+            case O_NOT_C:
+                printf("O_NOT_C\n");
+                break;
+            case O_NOT_D:
+                printf("O_NOT_D\n");
+                break;
+            case O_NOT_I:
+                printf("O_NOT_I\n");
+                break;
+            case O_NOTEQ_A:
+                printf("O_NOTEQ_A\n");
+                break;
+            case O_NOTEQ_C:
+                printf("O_NOTEQ_C\n");
+                break;
+            case O_NOTEQ_D:
+                printf("O_NOTEQ_D\n");
+                break;
+            case O_NOTEQ_I:
+                printf("O_NOTEQ_I\n");
+                break;
+            case O_OFFSET:
+                printf("O_OFFSET\n");
+                break;
+            case O_OR_A:
+                printf("O_OR_A\n");
+                break;
+            case O_OR_C:
+                printf("O_OR_C\n");
+                break;
+            case O_OR_D:
+                printf("O_OR_D\n");
+                break;
+            case O_OR_I:
+                printf("O_OR_I\n");
+                break;
+            case O_PUSHFPADDR:
+                printf("O_PUSHFPADDR\n");
+                break;
+            case O_PUSHCT_A:
+                printf("O_PUSHCT_A\n");
+                break;
+            case O_PUSHCT_C:
+                printf("O_PUSHCT_C\n");
+                break;
+            case O_PUSHCT_D:
+                printf("O_PUSHCT_D\n");
+                break;
+            case O_PUSHCT_I:
+                printf("O_PUSHCT_I\n");
+                break;
+            case O_RET:
+                printf("O_RET\n");
+                break;
+            case O_STORE:
+                printf("O_STORE\n");
+                break;
+            case O_SUB_C:
+                printf("O_SUB_C\n");
+                break;
+            case O_SUB_D:
+                printf("O_SUB_D\n");
+                break;
+            case O_SUB_I:
+                printf("O_SUB_I\n");
+                break;
+        }
+        IP=IP->next;
+    }
+
+}
+
 int main() {
     sintactic();
+//    mvTest();
+//    printInstructions(instructions);
     run(instructions);
 }

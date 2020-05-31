@@ -65,7 +65,7 @@ Symbol *requireSymbol(Symbols *symbols, const char *name);
 void deleteSymbolsAfter(Symbols *symbols, Symbol *symbol);
 
 typedef union{
-    long int i; // int, char
+    int i; // int, char
     double d; // double
     const char *str; // char[]
 }CtVal;
