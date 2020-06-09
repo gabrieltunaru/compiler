@@ -7,7 +7,7 @@
 
 #include "gc.h"
 
-Token *tokens;
+Token *tokens2;
 
 Token *crtTk = NULL, *consumedTk = NULL;
 int offset, sizeArgs;
@@ -304,11 +304,13 @@ int exprUnary(RetVal *rv) {
 int exprCast(RetVal *rv) {
     debug("exprCast");
     Instr *oldLastInstr = lastInstruction;
+    Token *startTk=crtTk;
     if (!consume(LPAR)) {
         if (exprUnary(rv)) {
-            deleteInstructionsAfter(oldLastInstr); //TODO: should this be here or a few lines below?
             return 1;
         } else {
+            crtTk=startTk;
+            deleteInstructionsAfter(oldLastInstr);
             return 0;
         }
     }
@@ -438,7 +440,7 @@ int exprAdd1(RetVal *rv) {
         i1 = getRVal(rv);
         t1 = rv->type;
         tkop = consumedTk;
-        if (!exprCast(&rve)) { crtTkErr("invalid expr after +-"); }
+        if (!exprMul(&rve)) { crtTkErr("invalid expr after +-"); }
         if (rv->type.nElements > -1 || rve.type.nElements > -1)
             tkerr(crtTk, "an array cannot be added or subtracted");
         if (rv->type.typeBase == TB_STRUCT || rve.type.typeBase == TB_STRUCT)
@@ -1120,8 +1122,8 @@ int unit() {
 void sintactic() {
     crtDepth = 0;
     addInitFuncs();
-    tokens = lexical("/home/tunarug/custom/gitprojects/facultate/lftc/analizator/test.c");
-    crtTk = tokens;
+    tokens2 = lexical("/home/tunarug/custom/gitprojects/facultate/lftc/analizator/test.c");
+    crtTk = tokens2;
     unit();
 }
 

@@ -8,6 +8,8 @@
 #include "ext_funcs.h"
 //#include "analizator.h"
 
+int crtDepth;
+
 void initSymbols(Symbols *symbols) {
     symbols->begin = NULL;
     symbols->end = NULL;
