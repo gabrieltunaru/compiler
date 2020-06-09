@@ -51,7 +51,7 @@ typedef struct _Symbol {
     };
 } Symbol;
 
-int crtDepth;
+extern int crtDepth;
 
 extern Symbols symbols;
 

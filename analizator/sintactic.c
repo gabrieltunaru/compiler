@@ -7,7 +7,7 @@
 
 #include "gc.h"
 
-Token *tokens;
+Token *tokens2;
 
 Token *crtTk = NULL, *consumedTk = NULL;
 int offset, sizeArgs;
@@ -1120,8 +1120,8 @@ int unit() {
 void sintactic() {
     crtDepth = 0;
     addInitFuncs();
-    tokens = lexical("/home/tunarug/custom/gitprojects/facultate/lftc/analizator/test.c");
-    crtTk = tokens;
+    tokens2 = lexical("/home/tunarug/custom/gitprojects/facultate/lftc/analizator/test.c");
+    crtTk = tokens2;
     unit();
 }
 

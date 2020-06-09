@@ -8,9 +8,9 @@
 #endif //ANALIZATOR_VM_H
 
 #define STACK_SIZE (32*1024)
-char stack[STACK_SIZE];
-char *SP; // Stack Pointer
-char *stackAfter; // first byte after stack; used for stack limit tests
+extern char stack[STACK_SIZE];
+extern char *SP; // Stack Pointer
+extern char *stackAfter; // first byte after stack; used for stack limit tests
 
 enum {
     O_ADD_C, O_ADD_D, O_ADD_I,
@@ -59,8 +59,8 @@ typedef struct _Instr {
 extern Instr *instructions, *lastInstruction; // double linked list
 
 #define GLOBAL_SIZE (32*1024)
-char globals[GLOBAL_SIZE];
-int nGlobals;
+extern char globals[GLOBAL_SIZE];
+extern int nGlobals;
 
 void pushd(double d);
 

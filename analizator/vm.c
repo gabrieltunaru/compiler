@@ -11,6 +11,11 @@
 #include "sintactic.h"
 
 
+ char stack[STACK_SIZE];
+ char *SP; // Stack Pointer
+ char *stackAfter; // first byte after stack; used for stack limit tests
+char globals[GLOBAL_SIZE];
+ int nGlobals;
 void pushd(double d) {
     if (SP + sizeof(double) > stackAfter)err("out of stack");
     *(double *) SP = d;
