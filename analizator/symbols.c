@@ -65,7 +65,7 @@ void deleteSymbolsAfter(Symbols *symbols, Symbol *symbol) {
     long n = symbols->end - symbols->begin;
     for (long i = 0; i < n; i++) {
         if (symbols->begin[i] == symbol) {
-            for (long j = n - 1; j > i; i++) {
+            for (long j = n - 1; j > i; j--) {
                 free(symbols->begin[j]);
                 symbols->begin[j] = NULL;
                 n--;

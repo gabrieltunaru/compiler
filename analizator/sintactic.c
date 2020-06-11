@@ -1122,7 +1122,7 @@ int unit() {
 void sintactic() {
     crtDepth = 0;
     addInitFuncs();
-    tokens2 = lexical("/home/tunarug/custom/gitprojects/facultate/lftc/analizator/test.c");
+    tokens2 = lexical("../test.c");
     crtTk = tokens2;
     unit();
 }
